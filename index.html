@@ -224,7 +224,15 @@ h2.manifesto{
 }
 
 /* RESPONSIVE */
+.nav-email-mobile {
+  display: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .54rem; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--meta); transition: color .2s;
+}
+.nav-email-mobile:hover { color: var(--text); }
 @media(max-width:820px){
+  .nav-email-mobile { display: block; }
   nav{padding:0 1.5rem}
   nav ul{display:none}
   .wrap,.wrap-w{padding:0 1.5rem}
@@ -250,6 +258,7 @@ h2.manifesto{
     <li><a href="#news">News</a></li>
     <li><a href="mailto:raederr@upmc.edu">Email</a></li>
   </ul>
+  <a class="nav-email-mobile" href="mailto:raederr@upmc.edu">Email</a>
 </nav>
 
 <section id="hero">
@@ -280,6 +289,8 @@ h2.manifesto{
       <div class="bio-portrait">
         <img src="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/portrait.jpg" alt="Robert Raeder"/>
         <p class="portrait-cap">Pittsburgh, PA</p>
+        <img src="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/brain.jpeg" alt="Neuromelanin-sensitive MRI" style="width:100%;display:block;margin-top:1.2rem;filter:brightness(.88) contrast(1.08);"/>
+        <p class="portrait-cap" style="margin-top:.5rem;">My brain &mdash; Pittsburgh, PA</p>
       </div>
     </div>
   </div>
@@ -329,7 +340,7 @@ h2.manifesto{
               Pitt Psychiatry Awarded $6M for Ketogenic Diet Study in Bipolar Disorder&nbsp;&#8599;
             </a>
           </p>
-          <p class="n-body">The Baszucki Group funded a new center for metabolic interventions in bipolar disorder, led by Dr. Mary Phillips. I serve as Research Principal at the UPMC site, directing the neuroimaging arm.</p>
+          <p class="n-body">The Baszucki Group funded a new center for metabolic interventions, led by Dr. Mary Phillips: <em>&#8220;Elucidating Neurobiological Mechanisms Underlying the Therapeutic Effect of the Ketogenic Diet in Bipolar Disorder (BD): A Multidisciplinary Mechanistic Study.&#8221;</em> Robert serves as Research Principal for this study.</p>
         </div>
       </div>
     </div>
