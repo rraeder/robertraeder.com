@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Robert Raeder</title>
+<meta name="description" content="Robert Raeder is a metabolic psychiatry researcher, examining how energy metabolism shapes psychiatric disorders and treatment response. Using neuroimaging, clinical trials, and naturalistic physiological models, he studies biological variation underlying psychiatric illness with the long-term goal of developing precision-medicine approaches that integrate metabolic and neural biomarkers to optimize mental and physical health across the lifespan."/>
 <meta property="og:title" content="Robert Raeder"/>
 <meta property="og:description" content="Research Principal Sr. at UPMC's Western Psychiatric Hospital. Metabolic psychiatry, neuroimaging, and the neurobiology of psychiatric illness."/>
 <meta property="og:image" content="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/portrait.jpg"/>
@@ -193,11 +194,14 @@ h2.manifesto{
 }
 
 /* NEWS */
-.news-list{border-top:1px solid var(--rule)}
+.news-list{border-top:none}
 .news-item{
   display:grid;grid-template-columns:62px 1fr;
-  gap:3rem;padding:2.2rem 0;border-bottom:1px solid var(--rule);
+  gap:3rem;padding:2.2rem 0 2.2rem 1rem;border-bottom:1px solid var(--rule);
+  border-left:2px solid rgba(155,195,235,0.28);
+  transition:border-color .2s;
 }
+.news-item:hover{border-left-color:rgba(155,195,235,0.75)}
 .n-year{
   font-family:'IBM Plex Mono',monospace;font-size:.52rem;
   letter-spacing:.08em;color:var(--meta);padding-top:3px;
@@ -264,6 +268,7 @@ h2.manifesto{
     <li><a href="#bio">Research</a></li>
     <li><a href="#marathon">Running</a></li>
     <li><a href="#news">News</a></li>
+    <li><a href="https://scholar.google.com/citations?user=TzcOq6YAAAAJ&hl=en" target="_blank" rel="noopener">Scholar</a></li>
     <li><a href="mailto:raederr@upmc.edu">Email</a></li>
   </ul>
   <a class="nav-email-mobile" href="mailto:raederr@upmc.edu">Email</a>
@@ -287,8 +292,11 @@ h2.manifesto{
         <p>I'm a Research Principal Sr. at <a href="https://www.psychiatry.pitt.edu" target="_blank" rel="noopener"><strong>UPMC's Western Psychiatric Hospital</strong></a> in the <a href="https://phillips.pitt.edu" target="_blank" rel="noopener">Phillips Mood &amp; Brain Lab</a>, where I train under the mentorship of Professor Mary L. Phillips, MD (Cantab). My work combines neuroimaging, metabolic, and behavioral measures to study how interventions like the ketogenic diet and exogenous ketones alter neurobiology and clinical trajectories across psychiatric disorders.</p>
         <p>The goal is not novelty. It's to make psychiatry more mechanistic and less speculative&thinsp;&mdash;&thinsp;and to build tools that actually work for real people. Psychiatry should involve less guesswork and more biomarkers. Right now, I'm particularly interested in <a href="https://www.nature.com/articles/s41380-026-03841-8" target="_blank" rel="noopener"><strong>neuromelanin-sensitive MRI</strong></a> as a proxy marker for dopamine metabolism.</p>
         <div class="cred">
-          Visiting Scholar, Dept of Psychiatry &mdash; Prof Paul Fletcher<br>
-          Visiting Scholar, Dept of Psychology &mdash; Prof Nicola S Clayton, FRS<br>
+          <span style="font-size:.44rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(155,195,235,0.38);display:block;margin-bottom:.3rem">Cambridge</span>
+          <span style="color:rgba(232,230,223,0.45)">Visiting Scholar, Dept of Psychiatry &mdash; Prof Paul Fletcher<br>
+          Visiting Scholar, Dept of Psychology &mdash; Prof Nicola S Clayton, FRS</span>
+          <span style="display:block;border-top:1px solid var(--rule);margin:1rem 0"></span>
+          <span style="font-size:.44rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(155,195,235,0.38);display:block;margin-bottom:.3rem">Education</span>
           MSc &mdash; King's College London, IoPPN<br>
           MA &mdash; University of London<br>
           BS &mdash; Point Park University<br>
@@ -381,9 +389,9 @@ h2.manifesto{
     <div class="contact-links">
       <a href="mailto:raederr@upmc.edu">Email</a>
       <span class="contact-dot">&middot;</span>
-      <a href="https://scholar.google.com/citations?user=TzcOq6YAAAAJ&hl=en" target="_blank" rel="noopener">Google Scholar</a>
-      <span class="contact-dot">&middot;</span>
       <a href="https://x.com/RobertRaeder" target="_blank" rel="noopener">X</a>
+      <span class="contact-dot">&middot;</span>
+      <a href="https://scholar.google.com/citations?user=TzcOq6YAAAAJ&hl=en" target="_blank" rel="noopener">Google Scholar</a>
     </div>
   </div>
 </section>
@@ -392,6 +400,17 @@ h2.manifesto{
 window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', scrollY > 50);
 }, {passive:true});
+
+(function(){
+  const style = document.createElement('style');
+  style.textContent = '.reveal{opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .6s ease}.reveal.visible{opacity:1;transform:translateY(0)}';
+  document.head.appendChild(style);
+  const els = document.querySelectorAll('.section, #contact');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }});
+  }, {threshold:0.08});
+  els.forEach(el => { el.classList.add('reveal'); io.observe(el); });
+})();
 
 (function () {
   const C   = document.getElementById('flow-canvas');
