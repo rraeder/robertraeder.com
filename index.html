@@ -72,12 +72,9 @@ nav ul a:hover{color:var(--text)}
 }
 #hero::after{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(
-    ellipse 48% 52% at 50% 50%,
-    rgba(9,9,10,.94) 0%,
-    rgba(9,9,10,.55) 50%,
-    transparent 100%
-  );
+  background:
+    radial-gradient(ellipse 55% 60% at 50% 50%,rgba(9,9,10,.88) 0%,rgba(9,9,10,.38) 52%,transparent 78%),
+    radial-gradient(ellipse 100% 100% at 50% 50%,transparent 55%,rgba(9,9,10,.82) 100%);
   pointer-events:none;
 }
 .hero-inner{position:relative;z-index:2;padding:0 2rem}
@@ -156,41 +153,24 @@ h2.manifesto{
 
 /* MARATHON GRID */
 .marathon-grid{
-  display:grid;grid-template-columns:1fr 430px;
-  gap:4rem;align-items:start;
+  display:grid;grid-template-columns:1fr 280px;
+  gap:6rem;align-items:start;
 }
 
-/* POLAROIDS */
-.polaroid-stack{position:relative;width:420px;height:380px}
-.polaroid{
-  position:absolute;width:220px;
-  background:#fdfdfd;
-  padding:.7rem .7rem 2.6rem;
-  box-shadow:0 2px 6px rgba(0,0,0,.22),
-             0 8px 24px rgba(0,0,0,.28),
-             0 20px 48px rgba(0,0,0,.18);
-  transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s;
+/* RUN PHOTOS */
+.run-photos{position:sticky;top:5.5rem}
+.run-photos img{
+  width:100%;aspect-ratio:3/4;display:block;
+  object-fit:cover;object-position:top center;
+  filter:contrast(1.05) brightness(.9);
+  transition:transform .4s cubic-bezier(.16,1,.3,1);
 }
-.polaroid:nth-child(1){top:20px;left:0;transform:rotate(-2.5deg);z-index:1}
-.polaroid:nth-child(2){top:0;left:190px;transform:rotate(2deg);z-index:2}
-.polaroid:hover{
-  transform:rotate(0deg) translateY(-5px) !important;
-  box-shadow:0 14px 40px rgba(0,0,0,.4);z-index:3;
-}
-.polaroid img{
-  width:100%;aspect-ratio:3/4;
-  object-fit:cover;object-position:top center;display:block;
-  filter:brightness(.78) contrast(1.1);
-}
-.polaroid-meta{
-  margin-top:.65rem;
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.44rem;letter-spacing:.09em;
-  color:rgba(20,20,20,.55);line-height:1.8;
-}
-.polaroid-meta strong{
-  display:block;color:rgba(20,20,20,.75);font-weight:400;
-  font-size:.48rem;margin-bottom:.15rem;
+.run-photos img:last-of-type{margin-top:1.2rem}
+.run-photos img:hover{transform:translateY(-4px)}
+.run-cap{
+  margin-top:.75rem;
+  font-family:'IBM Plex Mono',monospace;font-size:.46rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--meta);
 }
 
 /* NEWS */
@@ -252,9 +232,7 @@ h2.manifesto{
   .bio-grid,.marathon-grid{grid-template-columns:1fr;gap:3.5rem}
   .bio-portrait{position:static}
   .bio-portrait img{aspect-ratio:4/5}
-  .polaroid-stack{width:100%;height:320px}
-  .polaroid{width:180px}
-  .polaroid:nth-child(2){left:155px}
+  .run-photos{position:static}
   h1.name{font-size:clamp(4rem,16vw,7rem)}
   h2.manifesto{font-size:clamp(2.4rem,9vw,3.8rem)}
 }
@@ -323,21 +301,11 @@ h2.manifesto{
         <p>I study marathon runners with <strong>Dr. Jeffrey Brown</strong>, lead psychologist for the Boston Marathon. Building on his years of experience at the race, we <a href="https://link.springer.com/article/10.1007/s40279-024-02116-y" target="_blank" rel="noopener">developed and described a model of psychiatric care for marathon settings</a>. We also collected <a href="https://www.ovid.com/jnls/acsm-msse/abstract/10.1249/mss.0000000000004082~psychiatric-diagnosis-is-associated-with-pacing-divergence" target="_blank" rel="noopener">data showing that runners with psychiatric diagnoses exhibit different marathon performance patterns</a> and have distinct medical risks.</p>
         <p>The short-term goal is practical&thinsp;&mdash;&thinsp;predict and prevent medical encounters. The longer-term goal connects back to my work in metabolic psychiatry. The marathon is a challenge-based assessment of metabolic flexibility and energetic reserve. It lets us ask how metabolic stress is tolerated, adapted to, and in many cases, turned into something beneficial for mental health. More fundamentally, however, there's a bidirectional logic here: understanding how to enhance metabolism in high-performance athletes gives us a model for what goes wrong&thinsp;&mdash;&thinsp;and how to correct it&thinsp;&mdash;&thinsp;in people with metabolic vulnerability and psychiatric illness.</p>
       </div>
-      <div class="polaroid-stack">
-        <div class="polaroid">
-          <img src="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/runner.jpg" alt="The Great Race Pittsburgh"/>
-          <div class="polaroid-meta">
-            <strong>The Great Race</strong>
-            No. 1306 &middot; Pittsburgh, PA
-          </div>
-        </div>
-        <div class="polaroid">
-          <img src="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/boston.jpeg" alt="127th Boston Marathon"/>
-          <div class="polaroid-meta">
-            <strong>127th Boston Marathon</strong>
-            Medical Staff &middot; Finish Line &middot; Boston, MA
-          </div>
-        </div>
+      <div class="run-photos">
+        <img src="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/runner.jpg" alt="The Great Race Pittsburgh"/>
+        <p class="run-cap">The Great Race &middot; No. 1306 &middot; Pittsburgh, PA</p>
+        <img src="https://raw.githubusercontent.com/rraeder/robertraeder.com/main/boston.jpeg" alt="127th Boston Marathon"/>
+        <p class="run-cap">127th Boston Marathon &middot; Medical Staff &middot; Boston, MA</p>
       </div>
     </div>
   </div>
@@ -412,80 +380,58 @@ window.addEventListener('scroll', () => {
   els.forEach(el => { el.classList.add('reveal'); io.observe(el); });
 })();
 
-(function () {
-  const C   = document.getElementById('flow-canvas');
-  const ctx = C.getContext('2d');
-  let W, H, particles, raf, t = 0;
-  const dpr = window.devicePixelRatio || 1;
-  const COUNT = 1800, SPEED = 1.1, TRAIL = 0.018;
-  const FS = 0.0018, TS = 0.00028;
-
-  function noise(x, y, z) {
-    const a = Math.sin(x*1.4 + z*2.3) * Math.cos(y*1.1 - z*1.7);
-    const b = Math.sin(x*2.9 - z*1.1) * Math.cos(y*2.6 + z*0.9);
-    const c = Math.sin((x+y)*1.8 + z*3.1) * 0.5;
-    return (a + b*0.5 + c*0.25) / 1.75;
+function createSculpture(ctx,width,height){
+ const mobile=width<700,count=mobile?210:420,steps=mobile?100:150;
+ const paths=[];
+ for(let j=0;j<count;j++){
+  const beta=j/count*Math.PI*2;
+  const points=[];
+  for(let i=0;i<=steps;i++){
+   const a=i/steps*Math.PI*2;
+   const twist=beta+2*a+.25*Math.sin(3*a+beta);
+   const tube=.24+.065*Math.sin(3*a);
+   const r=1+tube*Math.cos(twist);
+   points.push([r*Math.cos(a)*1.25,r*Math.sin(a),tube*Math.sin(twist)+.19*Math.sin(2*a)]);
   }
-
-  function fieldAngle(x, y) {
-    return noise(x*FS, y*FS, t*TS) * Math.PI * 4;
-  }
-
-  function spawn() {
-    return {
-      x: Math.random() * W,
-      y: Math.random() * H,
-      life: Math.random() * 200 + 80,
-      age: Math.floor(Math.random() * 150),
-    };
-  }
-
-  function resize() {
-    const rect = C.getBoundingClientRect();
-    W = rect.width;
-    H = rect.height;
-    C.width  = W * dpr;
-    C.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#09090a';
-    ctx.fillRect(0, 0, W, H);
-    particles = Array.from({length: COUNT}, spawn);
-  }
-
-  function frame() {
-    t++;
-    ctx.fillStyle = `rgba(9,9,10,${TRAIL})`;
-    ctx.fillRect(0, 0, W, H);
-
-    particles.forEach(p => {
-      p.age++;
-      const a = fieldAngle(p.x, p.y);
-      const nx = p.x + Math.cos(a) * SPEED;
-      const ny = p.y + Math.sin(a) * SPEED;
-      const lf = p.age / p.life;
-      const fade = lf < 0.1 ? lf/0.1 : lf > 0.8 ? 1-(lf-0.8)/0.2 : 1;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(nx, ny);
-      ctx.strokeStyle = `rgba(155,195,235,${0.3 * fade})`;
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
-      p.x = nx; p.y = ny;
-      if (p.age > p.life || nx < 0 || nx > W || ny < 0 || ny > H) {
-        Object.assign(p, spawn());
-      }
-    });
-
-    raf = requestAnimationFrame(frame);
-  }
-
-  window.addEventListener('load', () => { resize(); frame(); });
-  window.addEventListener('resize', () => {
-    cancelAnimationFrame(raf);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    resize();
-    frame();
+  paths.push({points,beta,index:j});
+ }
+ return function draw(time){
+  ctx.fillStyle='#07090c';ctx.fillRect(0,0,width,height);
+  const scale=Math.min(width*.36,height*.56);
+  const turn=.28+Math.sin(time*.10)*.24,tilt=.53+Math.sin(time*.08)*.10;
+  const rot=-.30+Math.sin(time*.07)*.07;
+  const project=p=>{
+   let [x,y,z]=p;
+   const x1=x*Math.cos(turn)+z*Math.sin(turn),z1=-x*Math.sin(turn)+z*Math.cos(turn);
+   const y1=y*Math.cos(tilt)-z1*Math.sin(tilt),z2=y*Math.sin(tilt)+z1*Math.cos(tilt);
+   const xx=x1*Math.cos(rot)-y1*Math.sin(rot),yy=x1*Math.sin(rot)+y1*Math.cos(rot);
+   const perspective=3.8/(3.8-z2);
+   return [width*.5+xx*scale*perspective,height*.5+yy*scale*perspective,z2];
+  };
+  const projected=paths.map(f=>({...f,p:f.points.map(project)}));
+  projected.sort((a,b)=>a.p.reduce((n,p)=>n+p[2],0)-b.p.reduce((n,p)=>n+p[2],0));
+  projected.forEach(f=>{
+   const depth=f.p.reduce((n,p)=>n+p[2],0)/f.p.length;
+   const bright=(Math.sin(f.beta*3)+1)*.5;
+   ctx.beginPath();f.p.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
+   ctx.strokeStyle=`rgba(${Math.round(94+bright*64)},${Math.round(139+bright*62)},${Math.round(177+bright*56)},${.11+bright*.16+(depth+.8)*.045})`;
+   ctx.lineWidth=mobile?.55:.65;ctx.stroke();
   });
+ };
+}
+
+(function(){
+ const canvas=document.getElementById('flow-canvas'),ctx=canvas.getContext('2d');
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ let draw,raf=0,last=0,time=0,visible=true,paused=reduced.matches;
+ function resize(){const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw=createSculpture(ctx,w,h);draw(time);}
+ function frame(now){if(last)time+=Math.min((now-last)/1000,.05);last=now;draw(time);raf=requestAnimationFrame(frame);}
+ function sync(){cancelAnimationFrame(raf);last=0;if(visible&&!document.hidden&&!paused)raf=requestAnimationFrame(frame);else if(draw)draw(time);}
+ new ResizeObserver(()=>{resize();}).observe(canvas);
+ new IntersectionObserver(e=>{visible=e[0].isIntersecting;sync();}).observe(canvas);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{paused=reduced.matches;sync();});
+ resize();sync();
 })();
 </script>
 </body>
