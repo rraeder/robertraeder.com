@@ -175,6 +175,20 @@ h2.manifesto{
 /* SECTION HEAD */
 .section-head{margin-bottom:3.5rem}
 
+/* EDGE BLEED: text in the content column, photos run out to the right edge of the screen */
+.bleed-grid,.bleed-grid.bio-grid,.bleed-grid.marathon-grid{
+  display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);gap:6rem;align-items:start;
+  padding-left:calc(max(0px,(100vw - 1060px)/2) + 3rem);
+}
+.bleed-grid .bio-portrait,.bleed-grid .run-photos{position:sticky;top:5.5rem}
+.bleed-grid .bio-portrait img,.bleed-grid .run-photos img{max-height:78vh;object-fit:cover}
+.bleed-grid .portrait-cap,.bleed-grid .run-cap{padding-left:0}
+@media(max-width:820px){
+  .bleed-grid,.bleed-grid.bio-grid,.bleed-grid.marathon-grid{grid-template-columns:1fr;gap:3.5rem;padding:0 1.5rem}
+  .bleed-grid .bio-portrait,.bleed-grid .run-photos{position:static}
+  .bleed-grid .bio-portrait img,.bleed-grid .run-photos img{max-height:none}
+}
+
 /* BODY */
 .body-text p{
   font-size:.92rem;line-height:2.0;
@@ -331,7 +345,8 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
 <section id="bio" class="section">
   <div class="wrap-w">
     <h2 class="manifesto section-head">Research</h2>
-    <div class="bio-grid">
+  </div>
+  <div class="bleed-grid bio-grid">
       <div class="body-text">
         <p>I work in metabolic psychiatry. My focus is simple: understand how diet and metabolism change the brain, and use that to help people with serious psychiatric illness.</p>
         <p>I'm a Research Principal Sr. at <a href="https://www.psychiatry.pitt.edu" target="_blank" rel="noopener"><strong>UPMC's Western Psychiatric Hospital</strong></a> in the <a href="https://phillips.pitt.edu" target="_blank" rel="noopener">Phillips Mood &amp; Brain Lab</a>, where I train under the mentorship of Professor Mary L. Phillips, MD (Cantab). My work combines neuroimaging, metabolic, and behavioral measures to study how interventions like the ketogenic diet and exogenous ketones alter neurobiology and clinical trajectories across psychiatric disorders.</p>
@@ -351,16 +366,12 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
       <div class="bio-portrait">
         <img src="/img/portrait.webp" width="1080" height="1350" loading="lazy" alt="Robert Raeder"/>
         <p class="portrait-cap">Pittsburgh, PA</p>
-        <img src="/img/brain.webp" width="1080" height="1082" loading="lazy" alt="Neuromelanin-sensitive MRI" style="width:100%;display:block;margin-top:1.2rem;filter:brightness(.88) contrast(1.08);"/>
-        <p class="portrait-cap" style="margin-top:.5rem;">My brain &mdash; Pittsburgh, PA</p>
       </div>
-    </div>
   </div>
 </section>
 
 <section id="marathon" class="section">
-  <div class="wrap-w">
-    <div class="marathon-grid">
+  <div class="bleed-grid marathon-grid">
       <div class="body-text">
         <div class="fw" id="fw">
           <h2 class="manifesto">The marathon<br>is fieldwork.</h2>
@@ -376,7 +387,6 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
         <img src="/img/boston.webp" width="1080" height="1740" loading="lazy" alt="127th Boston Marathon"/>
         <p class="run-cap">127th Boston Marathon &middot; Medical Staff &middot; Boston, MA</p>
       </div>
-    </div>
   </div>
 </section>
 
