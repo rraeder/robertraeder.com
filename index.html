@@ -167,6 +167,11 @@ h2.manifesto{
   color:#f2f0e9;margin-bottom:3rem;max-width:16ch;
 }
 
+/* MARATHON WORD */
+.fw{position:relative;margin-bottom:3rem}
+.fw canvas{display:block;width:100%;cursor:crosshair;touch-action:pan-y}
+.fw h2.fw-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);margin:0}
+
 /* BODY */
 .body-text p{
   font-size:.92rem;line-height:2.0;
@@ -355,7 +360,10 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
     <span class="section-label">Running as Applied Science</span>
     <div class="marathon-grid">
       <div class="body-text">
-        <h2 class="manifesto">The marathon<br>is fieldwork.</h2>
+        <div class="fw" id="fw">
+          <h2 class="manifesto">The marathon<br>is fieldwork.</h2>
+          <canvas id="fw-cv" aria-hidden="true"></canvas>
+        </div>
         <p>Running is hard. That's the point. Endurance running stresses muscle tissue, metabolism, thermoregulation, and the brain all at the same time. It does it fast, outdoors, and at scale.</p>
         <p>I study marathon runners with <strong>Dr. Jeffrey Brown</strong>, lead psychologist for the Boston Marathon. Building on his years of experience at the race, we <a href="https://link.springer.com/article/10.1007/s40279-024-02116-y" target="_blank" rel="noopener">developed and described a model of psychiatric care for marathon settings</a>. We also collected <a href="https://www.ovid.com/jnls/acsm-msse/abstract/10.1249/mss.0000000000004082~psychiatric-diagnosis-is-associated-with-pacing-divergence" target="_blank" rel="noopener">data showing that runners with psychiatric diagnoses exhibit different marathon performance patterns</a> and have distinct medical risks.</p>
         <p>The short-term goal is practical&thinsp;&mdash;&thinsp;predict and prevent medical encounters. The longer-term goal connects back to my work in metabolic psychiatry. The marathon is a challenge-based assessment of metabolic flexibility and energetic reserve. It lets us ask how metabolic stress is tolerated, adapted to, and in many cases, turned into something beneficial for mental health. More fundamentally, however, there's a bidirectional logic here: understanding how to enhance metabolism in high-performance athletes gives us a model for what goes wrong&thinsp;&mdash;&thinsp;and how to correct it&thinsp;&mdash;&thinsp;in people with metabolic vulnerability and psychiatric illness.</p>
@@ -626,6 +634,83 @@ window.addEventListener('scroll', () => {
   if(on)raf=requestAnimationFrame(frame);
  }
  new IntersectionObserver(e=>{on=e[0].isIntersecting;cancelAnimationFrame(raf);if(on){last=performance.now();raf=requestAnimationFrame(frame)}}).observe(wrap);
+})();
+/* MARATHON WORD: the heading's MARATHON is made of particles that streak like a long exposure when you move across it.
+   At rest it pulses faintly at running cadence (~180 steps/min). Click for a start-gun burst. */
+(function(){
+ const box=document.getElementById('fw'),cv=document.getElementById('fw-cv'),ctx=cv.getContext('2d');
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const FONT="700 {s}px 'Helvetica Neue',Helvetica,Arial,sans-serif",K='MARATHON';
+ const INK='rgb(242,240,233)';
+ let W,H,size,P=[],TXT=[],font,wx0=0,wx1=0,wy0=0,wy1=0,raf=0,on=true,last=performance.now();
+ const ptr={x:-1e4,y:-1e4,px:-1e4,py:-1e4,t:0,in:false};
+
+ function lines(w){return w>=360?['THE MARATHON','IS FIELDWORK.']:['THE','MARATHON','IS FIELDWORK.']}
+ function build(){
+  const dpr=Math.min(devicePixelRatio||1,2);W=box.clientWidth;
+  const L=lines(W),o=document.createElement('canvas').getContext('2d');
+  o.font=FONT.replace('{s}',100);
+  const widest=Math.max(...L.map(l=>o.measureText(l).width));
+  size=Math.min(88,100*W/widest*.97);const lh=size*.98,top=size*.2;
+  H=Math.ceil(L.length*lh+top*2);
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);
+  const off=document.createElement('canvas');off.width=Math.ceil(W);off.height=H;const g=off.getContext('2d');
+  font=FONT.replace('{s}',size);g.font=font;g.textBaseline='alphabetic';g.fillStyle='#000';
+  const asc=g.measureText('H').actualBoundingBoxAscent;TXT=[];
+  L.forEach((l,i)=>{
+   const y=top+i*lh+(lh+asc)/2,k=l.indexOf(K);
+   if(k<0){TXT.push([l,0,y]);return}
+   const pre=l.slice(0,k),post=l.slice(k+K.length),xm=g.measureText(pre).width,mw=g.measureText(K).width;
+   if(pre)TXT.push([pre,0,y]);if(post)TXT.push([post,xm+mw,y]);
+   g.fillText(K,xm,y);wx0=xm;wx1=xm+mw;wy0=y-asc;wy1=y;
+  });
+  const data=g.getImageData(0,0,off.width,off.height).data,gap=Math.max(2,Math.round(size/30));
+  P=[];
+  for(let y=0;y<off.height;y+=gap)for(let x=0;x<off.width;x+=gap)if(data[(y*off.width+x)*4+3]>128)
+   P.push({hx:x,hy:y,x,y,vx:0,vy:0,e:0,dir:1,s:gap*(.62+Math.random()*.3),r:Math.random()});
+  box.querySelector('h2').classList.add('fw-live');
+ }
+
+ function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
+  ctx.clearRect(0,0,W,H);
+  ctx.font=font;ctx.textBaseline='alphabetic';ctx.fillStyle=INK;
+  for(const[l,x,y]of TXT)ctx.fillText(l,x,y);
+
+  // pointer speed, horizontal component drives the streaks
+  const dx=ptr.x-ptr.px,dy=ptr.y-ptr.py,sp=Math.hypot(dx,dy);ptr.px=ptr.x;ptr.py=ptr.y;
+  const R=Math.max(70,size*1.4),dirp=dx===0?0:Math.sign(dx);
+  // cadence: a faint footfall bounce, 3 steps a second
+  const bounce=reduce?0:-Math.abs(Math.sin(t*Math.PI*3))*size*.012;
+
+  for(const q of P){
+   if(!reduce){
+    if(ptr.in&&sp>.5){
+     const ddx=q.x-ptr.x,ddy=(q.y-ptr.y)*1.6,d=Math.hypot(ddx,ddy);
+     if(d<R){const f=1-d/R,s=Math.min(1,sp/30);
+      q.e=Math.max(q.e,f*s);if(dirp)q.dir=dirp;q.vx+=dirp*f*Math.min(sp,40)*.09}
+    }
+    q.e*=Math.exp(-dt*2.6);
+    q.vx+=(q.hx-q.x)*.07;q.vy+=(q.hy+bounce-q.y)*.2;q.vx*=.8;q.vy*=.7;q.x+=q.vx;q.y+=q.vy;
+   }
+   // streak trails behind the direction of travel
+   const len=(q.e*size*(.8+q.r*1.4)+Math.abs(q.vx)*1.6)*(q.r>.45?1:.25);
+   if(len>2){
+    const x2=q.x-q.dir*len,gr=ctx.createLinearGradient(q.x,0,x2,0);
+    const al=Math.min(1,q.e*1.2+.15);gr.addColorStop(0,`rgba(255,170,110,${.6*al})`);gr.addColorStop(.3,`rgba(255,122,46,${.32*al})`);gr.addColorStop(1,'rgba(255,122,46,0)');
+    ctx.strokeStyle=gr;ctx.lineWidth=Math.max(1,q.s*.32);ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(x2,q.y);ctx.stroke();
+   }
+   ctx.fillStyle=INK;ctx.globalAlpha=.92;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s);ctx.globalAlpha=1;
+  }
+  if(on&&!reduce)raf=requestAnimationFrame(frame);
+ }
+ const loc=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ cv.addEventListener('pointermove',e=>{const[x,y]=loc(e);if(!ptr.in){ptr.px=x;ptr.py=y}ptr.x=x;ptr.y=y;ptr.in=true});
+ cv.addEventListener('pointerleave',()=>{ptr.in=false});
+ cv.addEventListener('pointerdown',e=>{if(reduce)return;const[x,y]=loc(e);
+  for(const q of P){const f=Math.max(0,1-Math.abs(q.y-y)/(size*1.2));q.e=Math.max(q.e,.6+.4*f);q.dir=1;q.vx+=14+q.r*14}});
+ new ResizeObserver(()=>{build();if(reduce)frame(performance.now())}).observe(box);
+ new IntersectionObserver(e=>{on=e[0].isIntersecting;cancelAnimationFrame(raf);if(on&&!reduce){last=performance.now();raf=requestAnimationFrame(frame)}}).observe(box);
 })();
 </script>
 </body>
