@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Brain: ICBM 2009 MNI152 template, Copyright (C) 1993-2009 Louis Collins, McConnell Brain Imaging Centre, Montreal Neurological Institute, McGill University. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -45,7 +46,7 @@ img{height:auto}
 /* NAV */
 nav{
   position:fixed;top:0;left:0;right:0;z-index:200;
-  height:50px;display:flex;align-items:center;justify-content:space-between;
+  height:60px;display:flex;align-items:center;justify-content:space-between;
   padding:0 3rem;
   transition:background .5s,border-color .5s;
   border-bottom:1px solid transparent;
@@ -55,10 +56,15 @@ nav.scrolled{
   backdrop-filter:blur(20px);
   border-bottom-color:var(--rule);
 }
+.nav-brand{display:flex;align-items:baseline;gap:1rem}
 .nav-wordmark{
   font-family:'Helvetica Neue','Helvetica',Arial,sans-serif;
-  font-weight:700;font-size:.78rem;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--text);
+  font-weight:700;font-size:1rem;letter-spacing:.06em;
+  text-transform:uppercase;color:#f2f0e9;
+}
+.nav-sub{
+  font-family:'IBM Plex Mono',monospace;font-size:.6rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--meta);
 }
 nav ul{display:flex;gap:2.8rem;list-style:none}
 nav ul a{
@@ -69,24 +75,51 @@ nav ul a{
 nav ul a:hover{color:var(--text)}
 
 /* HERO */
-#hero{
-  position:relative;height:100vh;min-height:620px;
+#hero{position:relative;height:300vh}
+#hero-stage{
+  position:sticky;top:0;height:100vh;min-height:560px;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   text-align:center;overflow:hidden;
 }
-#flow-canvas{
-  position:absolute;inset:0;width:100%;height:100%;
-  pointer-events:none;
+#brain-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#hero-stage::after{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 60%,rgba(9,9,10,.85) 100%);
 }
-#hero::after{
-  content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 55% 60% at 50% 50%,rgba(9,9,10,.88) 0%,rgba(9,9,10,.38) 52%,transparent 78%),
-    radial-gradient(ellipse 100% 100% at 50% 50%,transparent 55%,rgba(9,9,10,.82) 100%);
-  pointer-events:none;
+#mid-label{
+  position:absolute;left:0;top:0;z-index:3;pointer-events:none;opacity:0;
+  text-align:left;white-space:nowrap;
 }
-.hero-inner{position:relative;z-index:2;padding:0 2rem;width:100%;pointer-events:none}
+#mid-label i{
+  position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;
+  background:#ff7a2e;box-shadow:0 0 14px #ff7a2e;
+}
+#mid-label span{
+  position:absolute;left:calc(var(--lead,80px) + 12px);top:-.62rem;
+  font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text);line-height:1.9;
+  white-space:normal;width:min(240px,calc(100vw - 100% - 3rem));min-width:180px;
+}
+#mid-label b{
+  position:absolute;left:6px;top:0;height:1px;width:calc(var(--lead,80px) + 0px);
+  background:linear-gradient(90deg,#ff7a2e,rgba(255,122,46,.25));
+}
+#mid-label em{display:block;font-style:normal;color:var(--meta);letter-spacing:.08em;text-transform:none}
+#z-read{
+  position:absolute;left:3rem;bottom:2.5rem;z-index:3;opacity:0;
+  font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--meta);text-align:left;line-height:1.9;
+  font-variant-numeric:tabular-nums;
+}
+#z-read b{color:var(--text);font-weight:400}
+@media(max-width:820px){
+  #z-read{left:1.5rem;bottom:1.5rem}
+  #mid-label b{display:none}
+  #mid-label span{left:-35vw;top:10rem;width:70vw;min-width:0;white-space:normal;text-align:center}
+  .nav-sub{display:none}
+}
+.hero-inner{position:relative;z-index:3;padding:0 2rem;width:100%;pointer-events:none}
 .hero-eyebrow{
   font-family:'IBM Plex Mono',monospace;
   font-size:.66rem;letter-spacing:.26em;text-transform:uppercase;
@@ -94,9 +127,9 @@ nav ul a:hover{color:var(--text)}
 }
 #energy-canvas{
   position:absolute;inset:0;width:100%;height:100%;
-  z-index:1;pointer-events:none;
+  z-index:2;pointer-events:none;
 }
-#hero{cursor:crosshair;touch-action:pan-y}
+#hero-stage{cursor:crosshair;touch-action:pan-y}
 .headline{
   position:relative;width:min(1100px,100%);margin:0 auto;
   min-height:clamp(7rem,22vw,18rem);
@@ -268,7 +301,7 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
 <body>
 
 <nav id="nav">
-  <span class="nav-wordmark">Robert Raeder</span>
+  <a class="nav-brand" href="#hero"><span class="nav-wordmark">Robert Raeder</span><span class="nav-sub">Metabolic Psychiatry · UPMC</span></a>
   <ul>
     <li><a href="#bio">Research</a></li>
     <li><a href="#marathon">Running</a></li>
@@ -280,12 +313,15 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
 </nav>
 
 <section id="hero">
-  <canvas id="flow-canvas"></canvas>
+ <div id="hero-stage">
+  <canvas id="brain-canvas" aria-hidden="true"></canvas>
   <canvas id="energy-canvas" aria-hidden="true"></canvas>
   <div class="hero-inner">
-    <span class="hero-eyebrow">Metabolic Psychiatry<br>UPMC Pittsburgh</span>
     <div class="headline" id="headline"><h1>The brain is a metabolic organ.</h1></div>
   </div>
+  <div id="mid-label" aria-hidden="true"><i></i><b></b><span>Substantia nigra · VTA<em>Dopamine-producing midbrain, imaged with neuromelanin-sensitive MRI</em></span></div>
+  <div id="z-read" aria-hidden="true">MNI152 template · axial slice<br><b style="text-transform:none">z = <span id="z-val">+88</span> mm</b></div>
+ </div>
 </section>
 
 <section id="bio" class="section">
@@ -393,7 +429,7 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
 
 <script>
 window.addEventListener('scroll', () => {
-  document.getElementById('nav').classList.toggle('scrolled', scrollY > 50);
+  document.getElementById('nav').classList.toggle('scrolled', scrollY > innerHeight*2-60);
 }, {passive:true});
 
 (function(){
@@ -407,64 +443,9 @@ window.addEventListener('scroll', () => {
   els.forEach(el => { el.classList.add('reveal'); io.observe(el); });
 })();
 
-function createSculpture(ctx,width,height){
- const mobile=width<700,count=mobile?210:420,steps=mobile?100:150;
- const paths=[];
- for(let j=0;j<count;j++){
-  const beta=j/count*Math.PI*2;
-  const points=[];
-  for(let i=0;i<=steps;i++){
-   const a=i/steps*Math.PI*2;
-   const twist=beta+2*a+.25*Math.sin(3*a+beta);
-   const tube=.24+.065*Math.sin(3*a);
-   const r=1+tube*Math.cos(twist);
-   points.push([r*Math.cos(a)*1.25,r*Math.sin(a),tube*Math.sin(twist)+.19*Math.sin(2*a)]);
-  }
-  paths.push({points,beta,index:j});
- }
- return function draw(time){
-  ctx.fillStyle='#07090c';ctx.fillRect(0,0,width,height);
-  const scale=Math.min(width*.36,height*.56);
-  const turn=.28+Math.sin(time*.10)*.24,tilt=.53+Math.sin(time*.08)*.10;
-  const rot=-.30+Math.sin(time*.07)*.07;
-  const project=p=>{
-   let [x,y,z]=p;
-   const x1=x*Math.cos(turn)+z*Math.sin(turn),z1=-x*Math.sin(turn)+z*Math.cos(turn);
-   const y1=y*Math.cos(tilt)-z1*Math.sin(tilt),z2=y*Math.sin(tilt)+z1*Math.cos(tilt);
-   const xx=x1*Math.cos(rot)-y1*Math.sin(rot),yy=x1*Math.sin(rot)+y1*Math.cos(rot);
-   const perspective=3.8/(3.8-z2);
-   return [width*.5+xx*scale*perspective,height*.5+yy*scale*perspective,z2];
-  };
-  const projected=paths.map(f=>({...f,p:f.points.map(project)}));
-  projected.sort((a,b)=>a.p.reduce((n,p)=>n+p[2],0)-b.p.reduce((n,p)=>n+p[2],0));
-  projected.forEach(f=>{
-   const depth=f.p.reduce((n,p)=>n+p[2],0)/f.p.length;
-   const bright=(Math.sin(f.beta*3)+1)*.5;
-   ctx.beginPath();f.p.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
-   ctx.strokeStyle=`rgba(${Math.round(94+bright*64)},${Math.round(139+bright*62)},${Math.round(177+bright*56)},${.11+bright*.16+(depth+.8)*.045})`;
-   ctx.lineWidth=mobile?.55:.65;ctx.stroke();
-  });
- };
-}
-
-(function(){
- const canvas=document.getElementById('flow-canvas'),ctx=canvas.getContext('2d');
- const reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let draw,raf=0,last=0,time=0,visible=true,paused=reduced.matches,loaded=document.readyState==='complete';
- function resize(){const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw=createSculpture(ctx,w,h);draw(time);}
- function frame(now){if(last)time+=Math.min((now-last)/1000,.05);last=now;draw(time);raf=requestAnimationFrame(frame);}
- function sync(){cancelAnimationFrame(raf);last=0;if(loaded&&visible&&!document.hidden&&!paused)raf=requestAnimationFrame(frame);else if(draw)draw(time);}
- new ResizeObserver(()=>{resize();}).observe(canvas);
- new IntersectionObserver(e=>{visible=e[0].isIntersecting;sync();}).observe(canvas);
- document.addEventListener('visibilitychange',sync);
- reduced.addEventListener('change',()=>{paused=reduced.matches;sync();});
- resize();sync();
- if(!loaded)window.addEventListener('load',()=>{loaded=true;sync();},{once:true});
-})();
-
 /* ENERGY HEADLINE: the hero line drawn as particles that idle, pulse, and heat up under the cursor */
 (function(){
- const hero=document.getElementById('hero'),slot=document.getElementById('headline');
+ const hero=document.getElementById('hero-stage'),slot=document.getElementById('headline');
  const cv=document.getElementById('energy-canvas'),ctx=cv.getContext('2d');
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  const FONT="700 {s}px 'Helvetica Neue',Helvetica,Arial,sans-serif";
@@ -538,6 +519,117 @@ function createSculpture(ctx,width,height){
  document.addEventListener('visibilitychange',sync);
  let rz;new ResizeObserver(()=>{clearTimeout(rz);rz=setTimeout(()=>{build();sync()},60)}).observe(hero);
  build();sync();
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>/* BRAIN SCENE: a particle brain behind the headline; scrolling slices it axially down to the midbrain */
+(async function(){
+ const wrap=document.getElementById('hero'),stage=document.getElementById('hero-stage'),cv=document.getElementById('brain-canvas');
+ const inner=stage.querySelector('.hero-inner'),energy=document.getElementById('energy-canvas');
+ const label=document.getElementById('mid-label'),zval=document.getElementById('z-val'),zread=document.getElementById('z-read');
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ if(!window.THREE)return;
+ let SHB;try{SHB=await (await fetch('/brain/shell.bin')).arrayBuffer()}catch(e){return}
+ const SLICE_META={X:197,Y:233,cols:10,rows:10,z0:-14,z1:82,ox:-98,oy:-134};
+ const C={x:0,y:-18,z:6}; // rough centre of the brain in MNI space (mm)
+
+ // outer surface: 1 mm points, x,y,z (MNI, int8) + intensity
+ const u=new Uint8Array(SHB),n=u.length/4,s8=new Int8Array(SHB);
+ const P=new Float32Array(n*3),I=new Float32Array(n),Zs=new Float32Array(n);
+ for(let i=0;i<n;i++){
+  const x=s8[i*4],y=s8[i*4+1],z=s8[i*4+2];
+  P[i*3]=-(x-C.x)+(Math.random()-.5)*.35;P[i*3+1]=z-C.z+(Math.random()-.5)*.35;P[i*3+2]=y-C.y+(Math.random()-.5)*.35;
+  I[i]=u[i*4+3]/255;Zs[i]=z;
+ }
+ const sg=new THREE.BufferGeometry();
+ sg.setAttribute('position',new THREE.BufferAttribute(P,3));
+ sg.setAttribute('aI',new THREE.BufferAttribute(I,1));sg.setAttribute('aZ',new THREE.BufferAttribute(Zs,1));
+ const U={uCut:{value:99},uPx:{value:1},uOp:{value:.2}};
+ const shellMat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  vertexShader:`attribute float aI,aZ;uniform float uCut,uPx,uOp;varying vec3 vC;
+  void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;
+   if(aZ>uCut+.5){gl_PointSize=0.;gl_Position=vec4(2.,2.,2.,1.);return;}
+   float b=.12+1.05*pow(aI,2.4);vC=vec3(.61,.76,.92)*b*uOp*.6;gl_PointSize=1.25*uPx/-mv.z;}`,
+  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*(1.-r*3.),1.);}`});
+ const shell=new THREE.Points(sg,shellMat);shell.renderOrder=1;
+
+ // cut face: a 1 mm MRI slice, interpolated between layers, read from a tiled atlas
+ const M=SLICE_META,tex=new THREE.Texture();
+ tex.flipY=false;tex.generateMipmaps=false;tex.minFilter=tex.magFilter=THREE.LinearFilter;
+ const img=new Image();img.onload=()=>{tex.image=img;tex.needsUpdate=true};img.src='/brain/slices.png';
+ const FU={tex:{value:tex},uCut:U.uCut,uOp:U.uOp,uGlow:{value:0},uTime:{value:0},
+  uMeta:{value:new THREE.Vector4(M.X,M.Y,M.cols,M.rows)},uZ:{value:new THREE.Vector4(M.z0,M.z1,M.ox,M.oy)},uC:{value:new THREE.Vector3(C.x,C.y,C.z)}};
+ const pg=new THREE.PlaneGeometry(M.X,M.Y,1,1);pg.rotateX(-Math.PI/2);
+ const faceMat=new THREE.ShaderMaterial({uniforms:FU,transparent:true,depthWrite:true,side:THREE.DoubleSide,
+  vertexShader:`varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform sampler2D tex;uniform float uCut,uOp,uGlow,uTime;uniform vec4 uMeta,uZ;uniform vec3 uC;varying vec3 vP;
+  vec2 sl(float k,vec2 ij){float tc=mod(k,uMeta.z),tr=floor(k/uMeta.z);return vec2((tc*uMeta.x+ij.x)/(uMeta.x*uMeta.z),(tr*uMeta.y+ij.y)/(uMeta.y*uMeta.w));}
+  float ell(vec3 p,vec3 c,vec3 r){vec3 d=(p-c)/r;return 1.-smoothstep(.15,1.,dot(d,d));}
+  void main(){
+   vec3 m=vec3(-vP.x+uC.x,vP.z+uC.y,uCut);           // MNI mm at this fragment
+   vec2 ij=vec2(m.x-uZ.z,m.y-uZ.w);
+   if(ij.x<1.||ij.y<1.||ij.x>uMeta.x-2.||ij.y>uMeta.y-2.)discard;
+   float k=clamp(uCut-uZ.x,0.,uZ.y-uZ.x),k0=floor(k),f=k-k0,k1=min(k0+1.,uZ.y-uZ.x);
+   vec4 a=texture2D(tex,sl(k0,ij)),b=texture2D(tex,sl(k1,ij));vec4 t=mix(a,b,f);
+   if(t.a<.5)discard;
+   float g=smoothstep(.28,.97,t.r);
+   vec3 c=mix(vec3(.04,.05,.07),vec3(.95,.94,.90),g*g*(3.-2.*g));
+   float glow=0.;
+   for(int s=0;s<2;s++){float sx=s==0?-1.:1.;
+    glow=max(glow,ell(m,vec3(sx*11.,-18.,-10.),vec3(4.,7.,5.)));
+    glow=max(glow,ell(m,vec3(sx*4.,-17.,-12.),vec3(3.,4.,4.)));}
+   float pulse=.85+.15*sin(uTime*3.+m.x*.6+m.y*.4);
+   vec3 hot=vec3(1.,.48,.18)*pulse*(.55+.75*g);
+   c=mix(c,hot,glow*uGlow*.85);
+   gl_FragColor=vec4(c,uOp);
+  }`});
+ const face=new THREE.Mesh(pg,faceMat);face.renderOrder=0;
+
+ const group=new THREE.Group();group.add(face,shell);
+ const scene=new THREE.Scene();scene.add(group);
+ const cam=new THREE.PerspectiveCamera(30,1,10,2000);
+ const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});ren.setClearColor(0,0);
+
+ let W=0,H=0;
+ function resize(){
+  W=stage.clientWidth;H=stage.clientHeight;const dpr=Math.min(devicePixelRatio||1,2);
+  ren.setPixelRatio(dpr);ren.setSize(W,H,false);cam.aspect=W/H;
+  const t=Math.tan(15*Math.PI/180);
+  cam.position.set(0,0,Math.max(88/t,80/(t*cam.aspect))/.8);cam.lookAt(0,0,0);cam.updateProjectionMatrix();
+  U.uPx.value=H*dpr/(2*t);
+ }
+ new ResizeObserver(resize).observe(stage);resize();
+
+ const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
+ const SN=new THREE.Vector3(-11+C.x,-12-C.z,-18-C.y);
+ let az=-.5,last=performance.now(),raf=0,on=true;
+ function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const r=wrap.getBoundingClientRect(),span=wrap.offsetHeight-innerHeight;
+  const p=span>0?Math.min(1,Math.max(0,-r.top/span)):0;
+  const head=1-sm(.04,.2,p),slice=sm(.1,.3,p),s=sm(.16,.78,p),glow=sm(.78,.9,p);
+  inner.style.opacity=head;energy.style.opacity=head;
+  const cut=88+(-12-88)*s;
+  U.uCut.value=cut;U.uOp.value=.2+.8*sm(.04,.24,p);FU.uGlow.value=glow;FU.uTime.value=now/1000;
+  face.visible=cut<84;face.position.y=cut-C.z;
+
+  const target=-.55;
+  if(!reduce)az+=dt*.16*(1-slice);
+  const near=target+Math.PI*2*Math.round((az-target)/(Math.PI*2));
+  az+=(near-az)*Math.min(1,slice*dt*4);
+  group.rotation.set(.12+.62*slice,az,0);
+  ren.render(scene,cam);
+
+  zread.style.opacity=sm(.14,.22,p);
+  zval.textContent=(cut>=.5?'+':cut<=-.5?'−':'')+Math.abs(Math.round(cut));
+  const v=SN.clone().applyMatrix4(group.matrixWorld).project(cam);
+  const sx=(v.x*.5+.5)*W,sy=(-v.y*.5+.5)*H;
+  label.style.opacity=glow;label.style.transform=`translate(${sx}px,${sy}px)`;
+  label.style.setProperty('--lead',(W>820?Math.max(60,W/2+Math.min(W,H)*.4-sx):0)+'px');
+  if(on)raf=requestAnimationFrame(frame);
+ }
+ new IntersectionObserver(e=>{on=e[0].isIntersecting;cancelAnimationFrame(raf);if(on){last=performance.now();raf=requestAnimationFrame(frame)}}).observe(wrap);
 })();
 </script>
 </body>
