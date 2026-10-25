@@ -175,6 +175,30 @@ h2.manifesto{
 /* SECTION HEAD */
 .section-head{margin-bottom:3.5rem}
 
+/* PHOTOS: full-bleed opening for Research, edge-bleeding race photo for the marathon */
+#bio.bleed-top{padding-top:0}
+.bleed-photo{position:relative;margin:0 0 5.5rem;height:min(80vh,62vw);min-height:380px;overflow:hidden}
+.bleed-photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:72% 30%;filter:brightness(.82) contrast(1.06)}
+.bleed-photo::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(9,9,10,.9) 0%,rgba(9,9,10,.45) 34%,transparent 58%),linear-gradient(180deg,transparent 62%,var(--bg) 100%)}
+.bleed-photo .section-head{position:absolute;z-index:1;margin:0;bottom:3.2rem;left:calc(max(0px,(100vw - 1060px)/2) + 3rem)}
+.body-text.solo{max-width:68ch}
+.mara{display:grid;grid-template-columns:minmax(0,600px) minmax(0,1fr);gap:5.5rem;
+  padding-left:calc(max(0px,(100vw - 1060px)/2) + 3rem)}
+.mara-photo{position:relative}
+.mara-photo img{position:sticky;top:60px;display:block;width:100%;height:calc(100vh - 60px);object-fit:cover;object-position:32% 28%;filter:brightness(.86) contrast(1.05)}
+.mini{margin-top:2.8rem;width:min(220px,60%)}
+.mini img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:center 18%;filter:grayscale(1) brightness(.88) contrast(1.05)}
+@media(max-width:820px){
+  .bleed-photo{height:66vh;min-height:320px;margin-bottom:3.5rem}
+  .bleed-photo img{object-position:74% 25%}
+  .bleed-photo::after{background:linear-gradient(180deg,transparent 45%,rgba(9,9,10,.6) 72%,var(--bg) 100%)}
+  .bleed-photo .section-head{left:1.5rem;bottom:1.6rem}
+  .mara{grid-template-columns:1fr;gap:3rem;padding:0 1.5rem}
+  .mara-photo{margin:0 -1.5rem}
+  .mara-photo img{position:static;height:78vh}
+}
+
 /* BODY */
 .body-text p{
   font-size:.92rem;line-height:2.0;
@@ -328,11 +352,13 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
  </div>
 </section>
 
-<section id="bio" class="section">
-  <div class="wrap-w">
+<section id="bio" class="section bleed-top">
+  <figure class="bleed-photo">
+    <img src="/img/portrait-wide.webp" width="2400" height="1600" alt="Robert Raeder"/>
     <h2 class="manifesto section-head">Research</h2>
-    <div class="bio-grid">
-      <div class="body-text">
+  </figure>
+  <div class="wrap-w">
+    <div class="body-text solo">
         <p>I work in metabolic psychiatry. My focus is simple: understand how diet and metabolism change the brain, and use that to help people with serious psychiatric illness.</p>
         <p>I'm a Research Principal Sr. at <a href="https://www.psychiatry.pitt.edu" target="_blank" rel="noopener"><strong>UPMC's Western Psychiatric Hospital</strong></a> in the <a href="https://phillips.pitt.edu" target="_blank" rel="noopener">Phillips Mood &amp; Brain Lab</a>, where I train under the mentorship of Professor Mary L. Phillips, MD (Cantab). My work combines neuroimaging, metabolic, and behavioral measures to study how interventions like the ketogenic diet and exogenous ketones alter neurobiology and clinical trajectories across psychiatric disorders.</p>
         <p>The goal is not novelty. It's to make psychiatry more mechanistic and less speculative&thinsp;&mdash;&thinsp;and to build tools that actually work for real people. Psychiatry should involve less guesswork and more biomarkers. Right now, I'm particularly interested in <a href="https://www.nature.com/articles/s41380-026-03841-8" target="_blank" rel="noopener"><strong>neuromelanin-sensitive MRI</strong></a> as a proxy marker for dopamine metabolism.</p>
@@ -348,20 +374,13 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
           BA &mdash; Point Park University
         </div>
       </div>
-      <div class="bio-portrait">
-        <img src="/img/portrait.webp" width="1080" height="1350" loading="lazy" alt="Robert Raeder"/>
-        <p class="portrait-cap">Pittsburgh, PA</p>
-        <img src="/img/brain.webp" width="1080" height="1082" loading="lazy" alt="Neuromelanin-sensitive MRI" style="width:100%;display:block;margin-top:1.2rem;filter:brightness(.88) contrast(1.08);"/>
-        <p class="portrait-cap" style="margin-top:.5rem;">My brain &mdash; Pittsburgh, PA</p>
-      </div>
     </div>
   </div>
 </section>
 
 <section id="marathon" class="section">
-  <div class="wrap-w">
-    <div class="marathon-grid">
-      <div class="body-text">
+  <div class="mara">
+    <div class="body-text mara-text">
         <div class="fw" id="fw">
           <h2 class="manifesto">The marathon<br>is fieldwork.</h2>
           <canvas id="fw-cv" aria-hidden="true"></canvas>
@@ -369,14 +388,12 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
         <p>Running is hard. That's the point. Endurance running stresses muscle tissue, metabolism, thermoregulation, and the brain all at the same time. It does it fast, outdoors, and at scale.</p>
         <p>I study marathon runners with <strong>Dr. Jeffrey Brown</strong>, lead psychologist for the Boston Marathon. Building on his years of experience at the race, we <a href="https://link.springer.com/article/10.1007/s40279-024-02116-y" target="_blank" rel="noopener">developed and described a model of psychiatric care for marathon settings</a>. We also collected <a href="https://www.ovid.com/jnls/acsm-msse/abstract/10.1249/mss.0000000000004082~psychiatric-diagnosis-is-associated-with-pacing-divergence" target="_blank" rel="noopener">data showing that runners with psychiatric diagnoses exhibit different marathon performance patterns</a> and have distinct medical risks.</p>
         <p>The short-term goal is practical&thinsp;&mdash;&thinsp;predict and prevent medical encounters. The longer-term goal connects back to my work in metabolic psychiatry. The marathon is a challenge-based assessment of metabolic flexibility and energetic reserve. It lets us ask how metabolic stress is tolerated, adapted to, and in many cases, turned into something beneficial for mental health. More fundamentally, however, there's a bidirectional logic here: understanding how to enhance metabolism in high-performance athletes gives us a model for what goes wrong&thinsp;&mdash;&thinsp;and how to correct it&thinsp;&mdash;&thinsp;in people with metabolic vulnerability and psychiatric illness.</p>
-      </div>
-      <div class="run-photos">
-        <img src="/img/runner.webp" width="1080" height="1620" loading="lazy" alt="The Great Race Pittsburgh"/>
-        <p class="run-cap">The Great Race &middot; No. 1306 &middot; Pittsburgh, PA</p>
-        <img src="/img/boston.webp" width="1080" height="1740" loading="lazy" alt="127th Boston Marathon"/>
-        <p class="run-cap">127th Boston Marathon &middot; Medical Staff &middot; Boston, MA</p>
-      </div>
+      <figure class="mini">
+        <img src="/img/boston.webp" width="1080" height="1740" loading="lazy" alt="Robert Raeder on the Boston Marathon medical staff"/>
+        <figcaption class="run-cap">127th Boston Marathon &middot; Medical staff</figcaption>
+      </figure>
     </div>
+    <div class="mara-photo"><img src="/img/race.webp" width="1400" height="2100" loading="lazy" alt="Robert Raeder running a road race"/></div>
   </div>
 </section>
 
