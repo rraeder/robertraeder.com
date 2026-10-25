@@ -469,7 +469,7 @@ function createSculpture(ctx,width,height){
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  const FONT="700 {s}px 'Helvetica Neue',Helvetica,Arial,sans-serif";
  const REST=[242,240,233],HOT=[255,122,46],SPARK=[255,240,200];
- let W=0,H=0,P=[],raf=0,visible=true,t0=performance.now(),first=true;
+ let W=0,H=0,P=[],TXT=[],font='',wx0=0,wx1=0,raf=0,visible=true,t0=performance.now(),first=true;
  const ptr={x:-1e4,y:-1e4,px:-1e4,py:-1e4,in:false};
  const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
  function col(e){const c=e<.12?REST:e<.6?mix(REST,HOT,(e-.12)/.48):mix(HOT,SPARK,Math.min(1,(e-.6)/.4));return`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`}
@@ -486,9 +486,16 @@ function createSculpture(ctx,width,height){
   slot.style.height=(L.length*lh)+'px';
   const sr=slot.getBoundingClientRect(),ox=sr.left-hr.left,oy=sr.top-hr.top;
   off.width=Math.ceil(W);off.height=Math.ceil(H);
-  o.font=FONT.replace('{s}',size);o.textAlign='center';o.textBaseline='alphabetic';o.fillStyle='#000';
-  const asc=o.measureText('H').actualBoundingBoxAscent;
-  L.forEach((l,i)=>o.fillText(l,ox+sr.width/2,oy+i*lh+(lh+asc)/2));
+  font=FONT.replace('{s}',size);o.font=font;o.textAlign='left';o.textBaseline='alphabetic';o.fillStyle='#000';
+  const asc=o.measureText('H').actualBoundingBoxAscent,K='METABOLIC';TXT=[];
+  L.forEach((l,i)=>{
+   const y=oy+i*lh+(lh+asc)/2,x0=ox+sr.width/2-o.measureText(l).width/2,k=l.indexOf(K);
+   if(k<0){TXT.push([l,x0,y]);return}
+   const pre=l.slice(0,k),post=l.slice(k+K.length),xm=x0+o.measureText(pre).width,mw=o.measureText(K).width;
+   if(pre)TXT.push([pre,x0,y]);
+   if(post)TXT.push([post,xm+mw,y]);
+   o.fillText(K,xm,y);wx0=xm;wx1=xm+mw;
+  });
   const data=o.getImageData(0,0,off.width,off.height).data,max=W<700?3800:8000;
   let gap=Math.max(2,Math.round(size/30)),pts;
   for(;;){pts=[];for(let y=0;y<off.height;y+=gap)for(let x=0;x<off.width;x+=gap)if(data[(y*off.width+x)*4+3]>128)pts.push([x,y]);if(pts.length<=max)break;gap++}
@@ -500,7 +507,9 @@ function createSculpture(ctx,width,height){
 
  function frame(now){
   const t=(now-t0)/1000;ctx.clearRect(0,0,W,H);
-  const cyc=(t%3.4)/3.4,waveX=-.2*W+cyc*1.4*W,ww=W*.07,R=Math.max(70,W*.08);
+  const span=wx1-wx0,cyc=(t%3.4)/3.4,waveX=wx0-.3*span+cyc*1.6*span,ww=span*.12,R=Math.max(70,W*.08);
+  ctx.font=font;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillStyle='rgb(242,240,233)';
+  for(const[l,x,y]of TXT)ctx.fillText(l,x,y);
   const pv=Math.min(1,Math.hypot(ptr.x-ptr.px,ptr.y-ptr.py)/25);
   for(const p of P){
    if(!reduce){
