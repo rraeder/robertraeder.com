@@ -57,8 +57,8 @@ nav.scrolled{
 }
 .nav-wordmark{
   font-family:'Helvetica Neue','Helvetica',Arial,sans-serif;
-  font-weight:700;font-size:.66rem;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--meta);
+  font-weight:700;font-size:.78rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text);
 }
 nav ul{display:flex;gap:2.8rem;list-style:none}
 nav ul a{
@@ -86,18 +86,31 @@ nav ul a:hover{color:var(--text)}
     radial-gradient(ellipse 100% 100% at 50% 50%,transparent 55%,rgba(9,9,10,.82) 100%);
   pointer-events:none;
 }
-.hero-inner{position:relative;z-index:2;padding:0 2rem}
+.hero-inner{position:relative;z-index:2;padding:0 2rem;width:100%;pointer-events:none}
 .hero-eyebrow{
   font-family:'IBM Plex Mono',monospace;
   font-size:.66rem;letter-spacing:.26em;text-transform:uppercase;
   color:var(--meta);display:block;margin-bottom:2rem;
 }
-h1.name{
+#energy-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:1;pointer-events:none;
+}
+#hero{cursor:crosshair;touch-action:pan-y}
+.headline{
+  position:relative;width:min(1100px,100%);margin:0 auto;
+  min-height:clamp(7rem,22vw,18rem);
+}
+.headline h1{
   font-family:'Helvetica Neue','Helvetica',Arial,sans-serif;
   font-weight:700;text-transform:uppercase;
-  font-size:clamp(5.5rem,13vw,12rem);
-  line-height:.85;letter-spacing:-.03em;
-  color:#f2f0e9;margin-bottom:2rem;
+  font-size:clamp(2.6rem,8vw,7.5rem);
+  line-height:.92;letter-spacing:-.02em;color:#f2f0e9;
+}
+/* once the particles are drawn, the real heading stays for screen readers only */
+.headline.live h1{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;
 }
 .hero-role{
   font-family:'IBM Plex Mono',monospace;
@@ -248,7 +261,6 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
   .bio-portrait{position:static}
   .bio-portrait img{aspect-ratio:4/5}
   .run-photos{position:static}
-  h1.name{font-size:clamp(4rem,16vw,7rem)}
   h2.manifesto{font-size:clamp(2.4rem,9vw,3.8rem)}
 }
 </style>
@@ -269,9 +281,10 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
 
 <section id="hero">
   <canvas id="flow-canvas"></canvas>
+  <canvas id="energy-canvas" aria-hidden="true"></canvas>
   <div class="hero-inner">
     <span class="hero-eyebrow">Metabolic Psychiatry<br>UPMC Pittsburgh</span>
-    <h1 class="name">Robert<br>Raeder</h1>
+    <div class="headline" id="headline"><h1>The brain is a metabolic organ.</h1></div>
   </div>
 </section>
 
@@ -280,7 +293,6 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
     <span class="section-label">Research</span>
     <div class="bio-grid">
       <div class="body-text">
-        <h2 class="manifesto">The brain is a metabolic organ.</h2>
         <p>I work in metabolic psychiatry. My focus is simple: understand how diet and metabolism change the brain, and use that to help people with serious psychiatric illness.</p>
         <p>I'm a Research Principal Sr. at <a href="https://www.psychiatry.pitt.edu" target="_blank" rel="noopener"><strong>UPMC's Western Psychiatric Hospital</strong></a> in the <a href="https://phillips.pitt.edu" target="_blank" rel="noopener">Phillips Mood &amp; Brain Lab</a>, where I train under the mentorship of Professor Mary L. Phillips, MD (Cantab). My work combines neuroimaging, metabolic, and behavioral measures to study how interventions like the ketogenic diet and exogenous ketones alter neurobiology and clinical trajectories across psychiatric disorders.</p>
         <p>The goal is not novelty. It's to make psychiatry more mechanistic and less speculative&thinsp;&mdash;&thinsp;and to build tools that actually work for real people. Psychiatry should involve less guesswork and more biomarkers. Right now, I'm particularly interested in <a href="https://www.nature.com/articles/s41380-026-03841-8" target="_blank" rel="noopener"><strong>neuromelanin-sensitive MRI</strong></a> as a proxy marker for dopamine metabolism.</p>
@@ -448,6 +460,75 @@ function createSculpture(ctx,width,height){
  reduced.addEventListener('change',()=>{paused=reduced.matches;sync();});
  resize();sync();
  if(!loaded)window.addEventListener('load',()=>{loaded=true;sync();},{once:true});
+})();
+
+/* ENERGY HEADLINE: the hero line drawn as particles that idle, pulse, and heat up under the cursor */
+(function(){
+ const hero=document.getElementById('hero'),slot=document.getElementById('headline');
+ const cv=document.getElementById('energy-canvas'),ctx=cv.getContext('2d');
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const FONT="700 {s}px 'Helvetica Neue',Helvetica,Arial,sans-serif";
+ const REST=[242,240,233],HOT=[255,122,46],SPARK=[255,240,200];
+ let W=0,H=0,P=[],raf=0,visible=true,t0=performance.now(),first=true;
+ const ptr={x:-1e4,y:-1e4,px:-1e4,py:-1e4,in:false};
+ const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+ function col(e){const c=e<.12?REST:e<.6?mix(REST,HOT,(e-.12)/.48):mix(HOT,SPARK,Math.min(1,(e-.6)/.4));return`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`}
+ function lines(w){return w>=900?['THE BRAIN IS A','METABOLIC ORGAN.']:w>=520?['THE BRAIN IS A','METABOLIC','ORGAN.']:['THE BRAIN','IS A','METABOLIC','ORGAN.']}
+
+ function build(){
+  const hr=hero.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+  W=hr.width;H=hr.height;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  const sw=slot.getBoundingClientRect().width,L=lines(W);
+  const off=document.createElement('canvas'),o=off.getContext('2d');
+  o.font=FONT.replace('{s}',100);
+  const widest=Math.max(...L.map(l=>o.measureText(l).width));
+  const size=Math.min(150,100*sw/widest*.98),lh=size*.92;
+  slot.style.height=(L.length*lh)+'px';
+  const sr=slot.getBoundingClientRect(),ox=sr.left-hr.left,oy=sr.top-hr.top;
+  off.width=Math.ceil(W);off.height=Math.ceil(H);
+  o.font=FONT.replace('{s}',size);o.textAlign='center';o.textBaseline='alphabetic';o.fillStyle='#000';
+  const asc=o.measureText('H').actualBoundingBoxAscent;
+  L.forEach((l,i)=>o.fillText(l,ox+sr.width/2,oy+i*lh+(lh+asc)/2));
+  const data=o.getImageData(0,0,off.width,off.height).data,max=W<700?3800:8000;
+  let gap=Math.max(2,Math.round(size/30)),pts;
+  for(;;){pts=[];for(let y=0;y<off.height;y+=gap)for(let x=0;x<off.width;x+=gap)if(data[(y*off.width+x)*4+3]>128)pts.push([x,y]);if(pts.length<=max)break;gap++}
+  const old=P;P=pts.map(([x,y],i)=>{const q=old[i],a=Math.random()*6.283,r=Math.random()*size*.7;
+   return{hx:x,hy:y,x:q?q.x:(first&&!reduce?x+Math.cos(a)*r:x),y:q?q.y:(first&&!reduce?y+Math.sin(a)*r:y),vx:0,vy:0,
+   e:q?q.e:(first&&!reduce?1:.06),s:gap*(.6+Math.random()*.35),ph:Math.random()*6.283}});
+  first=false;slot.classList.add('live');
+ }
+
+ function frame(now){
+  const t=(now-t0)/1000;ctx.clearRect(0,0,W,H);
+  const cyc=(t%3.4)/3.4,waveX=-.2*W+cyc*1.4*W,ww=W*.07,R=Math.max(70,W*.08);
+  const pv=Math.min(1,Math.hypot(ptr.x-ptr.px,ptr.y-ptr.py)/25);
+  for(const p of P){
+   if(!reduce){
+    const d0=p.hx-waveX;let target=.05+Math.exp(-(d0*d0)/(ww*ww))*.42;
+    if(ptr.in){const dx=p.x-ptr.x,dy=p.y-ptr.y,d=Math.hypot(dx,dy);
+     if(d<R){const f=1-d/R;target=Math.max(target,f*(.55+pv*.6));p.vx+=dx/(d||1)*f*.9;p.vy+=dy/(d||1)*f*.9}}
+    p.e+=(target-p.e)*(target>p.e?.25:.035);
+    const j=p.e*p.e*3.2;
+    p.vx+=(Math.random()-.5)*j+Math.cos(t*3+p.ph)*p.e*.25;
+    p.vy+=(Math.random()-.5)*j+Math.sin(t*3+p.ph)*p.e*.25;
+    p.vx+=(p.hx-p.x)*.06;p.vy+=(p.hy-p.y)*.06;p.vx*=.84;p.vy*=.84;p.x+=p.vx;p.y+=p.vy;
+   }
+   const s=p.s*(1+p.e*.6);ctx.globalAlpha=.7+p.e*.3;ctx.fillStyle=col(Math.min(1,p.e));
+   ctx.fillRect(p.x-s/2,p.y-s/2,s,s);
+  }
+  ctx.globalAlpha=1;ptr.px=ptr.x;ptr.py=ptr.y;
+  if(!reduce&&visible&&!document.hidden)raf=requestAnimationFrame(frame);
+ }
+ function sync(){cancelAnimationFrame(raf);if(!reduce&&visible&&!document.hidden)raf=requestAnimationFrame(frame);else frame(performance.now())}
+ function burst(x,y){for(const p of P){const dx=p.x-x,dy=p.y-y,d=Math.hypot(dx,dy)||1,f=Math.max(0,1-d/(W*.4));p.vx+=dx/d*f*24;p.vy+=dy/d*f*24;p.e=Math.max(p.e,f*1.1)}}
+ const loc=e=>{const r=hero.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ hero.addEventListener('pointermove',e=>{[ptr.x,ptr.y]=loc(e);ptr.in=true});
+ hero.addEventListener('pointerleave',()=>{ptr.in=false});
+ hero.addEventListener('pointerdown',e=>{const[x,y]=loc(e);ptr.x=ptr.px=x;ptr.y=ptr.py=y;ptr.in=true;if(!reduce)burst(x,y)});
+ new IntersectionObserver(e=>{visible=e[0].isIntersecting;sync()}).observe(hero);
+ document.addEventListener('visibilitychange',sync);
+ let rz;new ResizeObserver(()=>{clearTimeout(rz);rz=setTimeout(()=>{build();sync()},60)}).observe(hero);
+ build();sync();
 })();
 </script>
 </body>
