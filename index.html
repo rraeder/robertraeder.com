@@ -585,8 +585,12 @@ window.addEventListener('scroll', () => {
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!window.THREE)return;
  let SHB;try{SHB=await (await fetch('/brain/shell.bin')).arrayBuffer()}catch(e){return}
+ // Phones / coarse pointers / small screens get the 1 mm grid on the 2D path and a lower DPR; desktop keeps 0.5 mm in a 3D texture.
+ const LITE=matchMedia('(pointer: coarse)').matches||Math.min(innerWidth,screen.width||innerWidth)<820;
+ const DPR_CAP=LITE?1.5:2;
  // slices-hd.webp: 97 axial slices (z=-14..82, 1 mm apart) of 294x366 voxels at 0.5 mm, each tile padded 1 px, 10x10 grid; 0 = outside brain
  const SLICE_META={NX:294,NY:366,NZ:97,TX:296,TY:368,cols:10,rows:10,z0:-14,x0:-73,y0:-108,vox:.5};
+ const LITE_META={NX:147,NY:183,NZ:97,TX:149,TY:185,cols:10,rows:10,z0:-14,x0:-72.75,y0:-107.75,vox:1}; // slices-lite.webp: same slices at 1 mm
  const C={x:0,y:-18,z:6}; // rough centre of the brain in MNI space (mm)
 
  // outer surface: 1 mm points, x,y,z (MNI, int8) + intensity
@@ -612,30 +616,44 @@ window.addEventListener('scroll', () => {
  const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});ren.setClearColor(0,0);
  // cut face: a 0.5 mm MRI slice (nearest 1 mm layer, no blending between layers).
  // WebGL2: the atlas is unpacked into a 3D texture; WebGL1: sampled straight from the padded 2D atlas.
- const M=SLICE_META,gl2=!!(ren.capabilities&&ren.capabilities.isWebGL2);
- let tex=new THREE.DataTexture(new Uint8Array(4),1,1);
- const FU={tex:{value:tex},uCut:U.uCut,uOp:U.uOp,uGlow:{value:0},uTime:{value:0},uReady:{value:0},
+ const gl2=!!(ren.capabilities&&ren.capabilities.isWebGL2),use3D=!LITE&&gl2&&!!THREE.DataTexture3D;
+ const M=LITE?LITE_META:SLICE_META,SRC=LITE?'/brain/slices-lite.webp':'/brain/slices-hd.webp';
+ const FU={tex:{value:new THREE.DataTexture(new Uint8Array(4),1,1)},uCut:U.uCut,uOp:U.uOp,uGlow:{value:0},uTime:{value:0},uReady:{value:0},
   uN:{value:new THREE.Vector3(M.NX,M.NY,M.NZ)},uT:{value:new THREE.Vector4(M.TX,M.TY,M.cols,M.rows)},
   uO:{value:new THREE.Vector4(M.x0,M.y0,M.z0,M.vox)},uC:{value:new THREE.Vector3(C.x,C.y,C.z)}};
- const img=new Image();img.decoding='async';
- img.onload=()=>{
-  if(gl2&&THREE.DataTexture3D){
-   const c=document.createElement('canvas');c.width=img.width;c.height=img.height;
-   const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);
-   const src=g.getImageData(0,0,c.width,c.height).data,vol=new Uint8Array(M.NX*M.NY*M.NZ),rw=c.width;
-   for(let k=0;k<M.NZ;k++){const ox=(k%M.cols)*M.TX+1,oy=Math.floor(k/M.cols)*M.TY+1;
-    for(let y=0;y<M.NY;y++){let si=((oy+y)*rw+ox)*4,di=(k*M.NY+y)*M.NX;for(let x=0;x<M.NX;x++,si+=4)vol[di+x]=src[si];}}
-   tex=new THREE.DataTexture3D(vol,M.NX,M.NY,M.NZ);tex.format=THREE.RedFormat;tex.type=THREE.UnsignedByteType;tex.unpackAlignment=1;
-  }else{
-   tex=new THREE.Texture(img);tex.flipY=false;tex.anisotropy=ren.capabilities.getMaxAnisotropy();
-  }
+ // Decode off the main thread. 3D: a worker decodes the grid and repacks it into a volume. 2D: createImageBitmap.
+ const WORKER=`onmessage=async e=>{const M=e.data.M;const bm=await createImageBitmap(await (await fetch(e.data.url)).blob());
+  const c=new OffscreenCanvas(bm.width,bm.height),g=c.getContext('2d');g.drawImage(bm,0,0);
+  const src=g.getImageData(0,0,bm.width,bm.height).data,vol=new Uint8Array(M.NX*M.NY*M.NZ),rw=bm.width;
+  for(let k=0;k<M.NZ;k++){const ox=(k%M.cols)*M.TX+1,oy=Math.floor(k/M.cols)*M.TY+1;
+   for(let y=0;y<M.NY;y++){let si=((oy+y)*rw+ox)*4,di=(k*M.NY+y)*M.NX;for(let x=0;x<M.NX;x++,si+=4)vol[di+x]=src[si];}}
+  postMessage(vol,[vol.buffer]);}`;
+ async function loadVolume(){
+  if(window.Worker&&window.OffscreenCanvas)try{
+   const w=new Worker(URL.createObjectURL(new Blob([WORKER],{type:'text/javascript'})));
+   const vol=await new Promise((ok,no)=>{w.onmessage=e=>ok(e.data);w.onerror=no;w.postMessage({url:new URL(SRC,location.href).href,M})});w.terminate();return vol;
+  }catch(e){}
+  const img=new Image();img.src=SRC;await img.decode();
+  const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const g=c.getContext('2d');g.drawImage(img,0,0);
+  const src=g.getImageData(0,0,c.width,c.height).data,vol=new Uint8Array(M.NX*M.NY*M.NZ),rw=c.width;
+  for(let k=0;k<M.NZ;k++){const ox=(k%M.cols)*M.TX+1,oy=Math.floor(k/M.cols)*M.TY+1;
+   for(let y=0;y<M.NY;y++){let si=((oy+y)*rw+ox)*4,di=(k*M.NY+y)*M.NX;for(let x=0;x<M.NX;x++,si+=4)vol[di+x]=src[si];}}
+  return vol;
+ }
+ async function loadAtlas(){
+  if(window.createImageBitmap)try{return await createImageBitmap(await (await fetch(SRC)).blob())}catch(e){}
+  const img=new Image();img.src=SRC;await img.decode();return img;
+ }
+ const ready=(async()=>{
+  let tex;
+  if(use3D){tex=new THREE.DataTexture3D(await loadVolume(),M.NX,M.NY,M.NZ);tex.format=THREE.RedFormat;tex.type=THREE.UnsignedByteType;tex.unpackAlignment=1}
+  else{tex=new THREE.Texture(await loadAtlas());tex.flipY=false;tex.anisotropy=ren.capabilities.getMaxAnisotropy()}
   tex.generateMipmaps=false;tex.minFilter=tex.magFilter=THREE.LinearFilter;tex.needsUpdate=true;
   FU.tex.value=tex;FU.uReady.value=1;
- };
- img.src='/brain/slices-hd.webp';
+ })().catch(()=>{});
  const pg=new THREE.PlaneGeometry(197,233,1,1);pg.rotateX(-Math.PI/2);
  const faceMat=new THREE.ShaderMaterial({uniforms:FU,transparent:true,depthWrite:true,side:THREE.DoubleSide,
-  defines:gl2&&THREE.DataTexture3D?{VOL3D:1}:{},
+  defines:use3D?{VOL3D:1}:{},
   vertexShader:`varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`
   #ifdef VOL3D
@@ -648,7 +666,7 @@ window.addEventListener('scroll', () => {
   void main(){
    vec3 m=vec3(-vP.x+uC.x,vP.z+uC.y,uCut);           // MNI mm at this fragment
    if(uReady<.5)discard;
-   vec2 ij=(m.xy-uO.xy)/uO.w+.5;                      // texel coords (0.5 mm voxels)
+   vec2 ij=(m.xy-uO.xy)/uO.w+.5;                      // texel coords
    if(ij.x<.5||ij.y<.5||ij.x>uN.x-.5||ij.y>uN.y-.5)discard;
    float k=clamp(floor(uCut-uO.z+.5),0.,uN.z-1.);     // nearest 1 mm layer, no blending
    #ifdef VOL3D
@@ -677,7 +695,10 @@ window.addEventListener('scroll', () => {
 
  let W=0,H=0;
  function resize(){
-  W=stage.clientWidth;H=stage.clientHeight;const dpr=Math.min(devicePixelRatio||1,2);
+  const w=stage.clientWidth,h=stage.clientHeight;
+  // iOS URL bar show/hide only changes the height a little: keep the drawing buffer instead of reallocating mid-scroll
+  if(W&&w===W&&Math.abs(h-H)<160&&LITE)return;
+  W=w;H=h;const dpr=Math.min(devicePixelRatio||1,DPR_CAP);
   ren.setPixelRatio(dpr);ren.setSize(W,H,false);cam.aspect=W/H;
   const t=Math.tan(15*Math.PI/180);
   cam.position.set(0,0,Math.max(88/t,80/(t*cam.aspect))/(.8*1.12));cam.lookAt(0,0,0);cam.updateProjectionMatrix();
@@ -687,7 +708,7 @@ window.addEventListener('scroll', () => {
 
  const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
  const SN=new THREE.Vector3(-11+C.x,-12-C.z,-18-C.y);
- let az=-.5,last=performance.now(),raf=0,on=true;
+ let az=-.5,last=performance.now(),raf=0,on=true;const SV=new THREE.Vector3();let pZ='',pZo=-1,pLo=-1,pT='',pLead='';
  function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   const r=wrap.getBoundingClientRect(),span=wrap.offsetHeight-innerHeight;
@@ -705,15 +726,23 @@ window.addEventListener('scroll', () => {
   group.rotation.set(.12+.62*slice,az,0);
   ren.render(scene,cam);
 
-  zread.style.opacity=sm(.14,.22,p);
-  zval.textContent=(cut>=.5?'+':cut<=-.5?'−':'')+Math.abs(Math.round(cut));
-  const v=SN.clone().applyMatrix4(group.matrixWorld).project(cam);
-  const sx=(v.x*.5+.5)*W,sy=(-v.y*.5+.5)*H;
-  label.style.opacity=glow;label.style.transform=`translate(${sx}px,${sy}px)`;
-  label.style.setProperty('--lead',(W>820?Math.max(60,W/2+Math.min(W,H)*.4-sx):0)+'px');
+  const zo=sm(.14,.22,p);if(zo!==pZo){zread.style.opacity=pZo=zo}
+  const zt=(cut>=.5?'+':cut<=-.5?'−':'')+Math.abs(Math.round(cut));if(zt!==pZ)zval.textContent=pZ=zt;
+  if(glow!==pLo)label.style.opacity=pLo=glow;
+  if(glow>0){
+   const v=SV.copy(SN).applyMatrix4(group.matrixWorld).project(cam);
+   const sx=(v.x*.5+.5)*W,sy=(-v.y*.5+.5)*H,tr=`translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
+   if(tr!==pT)label.style.transform=pT=tr;
+   const ld=(W>820?Math.max(60,W/2+Math.min(W,H)*.4-sx):0).toFixed(0)+'px';if(ld!==pLead)label.style.setProperty('--lead',pLead=ld);
+  }
   if(on)raf=requestAnimationFrame(frame);
  }
+ // Start only once the slices are on the GPU and shaders are compiled, then fade the canvas in: no pop-in, no first-frame hitch.
+ cv.style.opacity=0;cv.style.transition='opacity .6s ease';
+ await Promise.race([ready,new Promise(r=>setTimeout(r,8000))]);
+ ren.compile(scene,cam);if(ren.initTexture&&FU.uReady.value)ren.initTexture(FU.tex.value);
  new IntersectionObserver(e=>{on=e[0].isIntersecting;cancelAnimationFrame(raf);if(on){last=performance.now();raf=requestAnimationFrame(frame)}}).observe(wrap);
+ requestAnimationFrame(()=>{cv.style.opacity=1});
 })();
 /* MARATHON WORD: the heading's MARATHON is made of particles that streak like a long exposure when you move across it.
    At rest it pulses faintly at running cadence (~180 steps/min). Click for a start-gun burst. */

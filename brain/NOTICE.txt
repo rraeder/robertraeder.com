@@ -1,5 +1,5 @@
 shell.bin is derived from the ICBM 2009 nonlinear symmetric MNI152 template (1 mm).
-slices-hd.webp is derived from the ICBM 2009b nonlinear symmetric MNI152 template
+slices-hd.webp (0.5 mm) and slices-lite.webp (1 mm, 2x2 average for phones) are derived from the ICBM 2009b nonlinear symmetric MNI152 template
 (0.5 mm, mni_icbm152_t1_tal_nlin_sym_09b_hires): T1w axial slices z = -14..82 mm,
 cropped to the brain, intensity-matched to the earlier 1 mm slices, losslessly encoded.
 Source: https://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009
