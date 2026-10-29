@@ -1,4 +1,8 @@
-shell.bin and slices.png are derived from the ICBM 2009 nonlinear symmetric MNI152 template.
+shell.bin is derived from the ICBM 2009 nonlinear symmetric MNI152 template (1 mm).
+slices-hd.webp (0.5 mm) and slices-lite.webp (1 mm, 2x2 average for phones) are derived from the ICBM 2009b nonlinear symmetric MNI152 template
+(0.5 mm, mni_icbm152_t1_tal_nlin_sym_09b_hires): T1w axial slices z = -14..82 mm,
+cropped to the brain, intensity-matched to the earlier 1 mm slices, losslessly encoded.
+Source: https://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152NLin2009
 
 Copyright (C) 1993-2009 Louis Collins, McConnell Brain Imaging Centre,
 Montreal Neurological Institute, McGill University. Permission to use,
@@ -7,3 +11,9 @@ purpose and without fee is hereby granted, provided that the above
 copyright notice appear in all copies. The authors and McGill University
 make no representations about the suitability of this software for any
 purpose. It is provided "as is" without express or implied warranty.
+The authors are not responsible for any data loss, equipment damage,
+property loss, or injury to subjects or patients resulting from the use
+or misuse of this software package.
+
+References: Fonov et al., NeuroImage 54 (2011) 313-327;
+Fonov et al., NeuroImage 47 (2009) S102.
