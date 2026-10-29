@@ -585,7 +585,8 @@ window.addEventListener('scroll', () => {
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!window.THREE)return;
  let SHB;try{SHB=await (await fetch('/brain/shell.bin')).arrayBuffer()}catch(e){return}
- const SLICE_META={X:197,Y:233,cols:10,rows:10,z0:-14,z1:82,ox:-98,oy:-134};
+ // slices-hd.webp: 97 axial slices (z=-14..82, 1 mm apart) of 294x366 voxels at 0.5 mm, each tile padded 1 px, 10x10 grid; 0 = outside brain
+ const SLICE_META={NX:294,NY:366,NZ:97,TX:296,TY:368,cols:10,rows:10,z0:-14,x0:-73,y0:-108,vox:.5};
  const C={x:0,y:-18,z:6}; // rough centre of the brain in MNI space (mm)
 
  // outer surface: 1 mm points, x,y,z (MNI, int8) + intensity
@@ -593,7 +594,7 @@ window.addEventListener('scroll', () => {
  const P=new Float32Array(n*3),I=new Float32Array(n),Zs=new Float32Array(n);
  for(let i=0;i<n;i++){
   const x=s8[i*4],y=s8[i*4+1],z=s8[i*4+2];
-  P[i*3]=-(x-C.x)+(Math.random()-.5)*.35;P[i*3+1]=z-C.z+(Math.random()-.5)*.35;P[i*3+2]=y-C.y+(Math.random()-.5)*.35;
+  P[i*3]=-(x-C.x);P[i*3+1]=z-C.z;P[i*3+2]=y-C.y;
   I[i]=u[i*4+3]/255;Zs[i]=z;
  }
  const sg=new THREE.BufferGeometry();
@@ -605,30 +606,60 @@ window.addEventListener('scroll', () => {
   void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;
    if(aZ>uCut+.5){gl_PointSize=0.;gl_Position=vec4(2.,2.,2.,1.);return;}
    float b=.12+1.05*pow(aI,2.4);vC=vec3(.74,.74,.72)*b*uOp*.56;gl_PointSize=1.25*uPx/-mv.z;}`,
-  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*(1.-r*3.),1.);}`});
+  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*smoothstep(.25,.13,r),1.);}`});
  const shell=new THREE.Points(sg,shellMat);shell.renderOrder=1;
 
- // cut face: a 1 mm MRI slice, interpolated between layers, read from a tiled atlas
- const M=SLICE_META,tex=new THREE.Texture();
- tex.flipY=false;tex.generateMipmaps=false;tex.minFilter=tex.magFilter=THREE.LinearFilter;
- const img=new Image();img.onload=()=>{tex.image=img;tex.needsUpdate=true};img.onerror=()=>{img.onerror=null;img.src='/brain/slices.png'};img.src='/brain/slices.webp';
- const FU={tex:{value:tex},uCut:U.uCut,uOp:U.uOp,uGlow:{value:0},uTime:{value:0},
-  uMeta:{value:new THREE.Vector4(M.X,M.Y,M.cols,M.rows)},uZ:{value:new THREE.Vector4(M.z0,M.z1,M.ox,M.oy)},uC:{value:new THREE.Vector3(C.x,C.y,C.z)}};
- const pg=new THREE.PlaneGeometry(M.X,M.Y,1,1);pg.rotateX(-Math.PI/2);
+ const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});ren.setClearColor(0,0);
+ // cut face: a 0.5 mm MRI slice (nearest 1 mm layer, no blending between layers).
+ // WebGL2: the atlas is unpacked into a 3D texture; WebGL1: sampled straight from the padded 2D atlas.
+ const M=SLICE_META,gl2=!!(ren.capabilities&&ren.capabilities.isWebGL2);
+ let tex=new THREE.DataTexture(new Uint8Array(4),1,1);
+ const FU={tex:{value:tex},uCut:U.uCut,uOp:U.uOp,uGlow:{value:0},uTime:{value:0},uReady:{value:0},
+  uN:{value:new THREE.Vector3(M.NX,M.NY,M.NZ)},uT:{value:new THREE.Vector4(M.TX,M.TY,M.cols,M.rows)},
+  uO:{value:new THREE.Vector4(M.x0,M.y0,M.z0,M.vox)},uC:{value:new THREE.Vector3(C.x,C.y,C.z)}};
+ const img=new Image();img.decoding='async';
+ img.onload=()=>{
+  if(gl2&&THREE.DataTexture3D){
+   const c=document.createElement('canvas');c.width=img.width;c.height=img.height;
+   const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);
+   const src=g.getImageData(0,0,c.width,c.height).data,vol=new Uint8Array(M.NX*M.NY*M.NZ),rw=c.width;
+   for(let k=0;k<M.NZ;k++){const ox=(k%M.cols)*M.TX+1,oy=Math.floor(k/M.cols)*M.TY+1;
+    for(let y=0;y<M.NY;y++){let si=((oy+y)*rw+ox)*4,di=(k*M.NY+y)*M.NX;for(let x=0;x<M.NX;x++,si+=4)vol[di+x]=src[si];}}
+   tex=new THREE.DataTexture3D(vol,M.NX,M.NY,M.NZ);tex.format=THREE.RedFormat;tex.type=THREE.UnsignedByteType;tex.unpackAlignment=1;
+  }else{
+   tex=new THREE.Texture(img);tex.flipY=false;tex.anisotropy=ren.capabilities.getMaxAnisotropy();
+  }
+  tex.generateMipmaps=false;tex.minFilter=tex.magFilter=THREE.LinearFilter;tex.needsUpdate=true;
+  FU.tex.value=tex;FU.uReady.value=1;
+ };
+ img.src='/brain/slices-hd.webp';
+ const pg=new THREE.PlaneGeometry(197,233,1,1);pg.rotateX(-Math.PI/2);
  const faceMat=new THREE.ShaderMaterial({uniforms:FU,transparent:true,depthWrite:true,side:THREE.DoubleSide,
+  defines:gl2&&THREE.DataTexture3D?{VOL3D:1}:{},
   vertexShader:`varying vec3 vP;void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform sampler2D tex;uniform float uCut,uOp,uGlow,uTime;uniform vec4 uMeta,uZ;uniform vec3 uC;varying vec3 vP;
-  vec2 sl(float k,vec2 ij){float tc=mod(k,uMeta.z),tr=floor(k/uMeta.z);return vec2((tc*uMeta.x+ij.x)/(uMeta.x*uMeta.z),(tr*uMeta.y+ij.y)/(uMeta.y*uMeta.w));}
+  fragmentShader:`
+  #ifdef VOL3D
+  precision highp sampler3D;uniform sampler3D tex;
+  #else
+  uniform sampler2D tex;
+  #endif
+  uniform float uCut,uOp,uGlow,uTime,uReady;uniform vec3 uN,uC;uniform vec4 uT,uO;varying vec3 vP;
   float ell(vec3 p,vec3 c,vec3 r){vec3 d=(p-c)/r;return 1.-smoothstep(.15,1.,dot(d,d));}
   void main(){
    vec3 m=vec3(-vP.x+uC.x,vP.z+uC.y,uCut);           // MNI mm at this fragment
-   vec2 ij=vec2(m.x-uZ.z,m.y-uZ.w);
-   if(ij.x<1.||ij.y<1.||ij.x>uMeta.x-2.||ij.y>uMeta.y-2.)discard;
-   float k=clamp(uCut-uZ.x,0.,uZ.y-uZ.x),k0=floor(k),f=k-k0,k1=min(k0+1.,uZ.y-uZ.x);
-   vec4 a=texture2D(tex,sl(k0,ij)),b=texture2D(tex,sl(k1,ij));vec4 t=mix(a,b,f);
-   if(t.a<.5)discard;
-   float g=smoothstep(.28,.97,t.r);
-   vec3 c=mix(vec3(.04,.05,.07),vec3(.95,.94,.90),g*g*(3.-2.*g));
+   if(uReady<.5)discard;
+   vec2 ij=(m.xy-uO.xy)/uO.w+.5;                      // texel coords (0.5 mm voxels)
+   if(ij.x<.5||ij.y<.5||ij.x>uN.x-.5||ij.y>uN.y-.5)discard;
+   float k=clamp(floor(uCut-uO.z+.5),0.,uN.z-1.);     // nearest 1 mm layer, no blending
+   #ifdef VOL3D
+   float v=texture(tex,vec3(ij/uN.xy,(k+.5)/uN.z)).r;
+   #else
+   vec2 tl=vec2(mod(k,uT.z),floor(k/uT.z))*uT.xy+1.;
+   float v=texture2D(tex,(tl+ij)/(uT.xy*uT.zw)).r;
+   #endif
+   if(v<.03)discard;
+   float g=smoothstep(.40,.90,v);g=g*g*(3.-2.*g);
+   vec3 c=mix(vec3(.04,.05,.07),vec3(.95,.94,.90),g);
    float glow=0.;
    for(int s=0;s<2;s++){float sx=s==0?-1.:1.;
     glow=max(glow,ell(m,vec3(sx*11.,-18.,-10.),vec3(4.,7.,5.)));
@@ -643,14 +674,13 @@ window.addEventListener('scroll', () => {
  const group=new THREE.Group();group.add(face,shell);
  const scene=new THREE.Scene();scene.add(group);
  const cam=new THREE.PerspectiveCamera(30,1,10,2000);
- const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});ren.setClearColor(0,0);
 
  let W=0,H=0;
  function resize(){
   W=stage.clientWidth;H=stage.clientHeight;const dpr=Math.min(devicePixelRatio||1,2);
   ren.setPixelRatio(dpr);ren.setSize(W,H,false);cam.aspect=W/H;
   const t=Math.tan(15*Math.PI/180);
-  cam.position.set(0,0,Math.max(88/t,80/(t*cam.aspect))/.8);cam.lookAt(0,0,0);cam.updateProjectionMatrix();
+  cam.position.set(0,0,Math.max(88/t,80/(t*cam.aspect))/(.8*1.12));cam.lookAt(0,0,0);cam.updateProjectionMatrix();
   U.uPx.value=H*dpr/(2*t);
  }
  new ResizeObserver(resize).observe(stage);resize();
