@@ -611,8 +611,8 @@ window.addEventListener('scroll', () => {
  const LITE_META={NX:147,NY:183,NZ:97,TX:149,TY:185,cols:10,rows:10,z0:-14,x0:-72.75,y0:-107.75,vox:1}; // slices-lite.webp: same slices at 1 mm
  const C={x:0,y:-18,z:6}; // rough centre of the brain in MNI space (mm)
 
- // surface: points spread evenly over the folded cortex (from the T1 slices) and, below z = -13, the mask surface;
- // each has an outward normal and a luminance that falls off into the sulci (see tools/build_shell.py)
+ // surface: a regular lattice of points (1 mm; 1.5 mm on phones) on the folded cortex (from the T1 slices) and, below z = -13,
+ // the mask surface; each has an outward normal and a luminance that falls off into the sulci (see tools/build_shell.py)
  // layout: uint32 N | int16 xyz (MNI mm x100) | int8 normal x127 | uint8 luminance
  const n=new Uint32Array(SHB,0,1)[0];
  const q16=new Int16Array(SHB,4,n*3),q8=new Int8Array(SHB,4+n*6,n*3),qL=new Uint8Array(SHB,4+n*9,n);
@@ -626,7 +626,7 @@ window.addEventListener('scroll', () => {
  const sg=new THREE.BufferGeometry();
  sg.setAttribute('position',new THREE.BufferAttribute(P,3));sg.setAttribute('aN',new THREE.BufferAttribute(Nn,3));
  sg.setAttribute('aL',new THREE.BufferAttribute(Lm,1));sg.setAttribute('aZ',new THREE.BufferAttribute(Zs,1));
- const U={uCut:{value:99},uPx:{value:1},uOp:{value:.2},uSz:{value:LITE?1.45:1.25}};
+ const U={uCut:{value:99},uPx:{value:1},uOp:{value:.2},uSz:{value:LITE?1.3:.88}};
  // Lit by its normals: the near surface carries the anatomy, the silhouette gets a rim, the far side falls back to a ghost,
  // and the points just under the cut plane light up as a contour.
  const shellMat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
@@ -636,11 +636,11 @@ window.addEventListener('scroll', () => {
    vec3 nv=normalize(normalMatrix*aN),v=normalize(-mv.xyz);float ndv=dot(nv,v);
    float front=smoothstep(-.05,.4,ndv),rim=pow(1.-abs(ndv),2.5);
    float key=.5+.5*dot(nv,normalize(vec3(-.5,.65,.57)));
-   float b=.012+aL*(front*(.05+.6*key*key)+rim*(.06+.3*front));
+   float b=.02+aL*(front*(.08+1.05*key*key)+rim*(.10+.45*front));
    float edge=(1.-smoothstep(0.,1.2,uCut-aZ))*step(uCut,84.)*aL;
    vC=vec3(.82,.82,.79)*b*uOp+vec3(.95,.93,.88)*edge*.22;
    gl_PointSize=uSz*uPx/-mv.z;}`,
-  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*smoothstep(.25,.10,r),1.);}`});
+  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*smoothstep(.25,.19,r),1.);}`});
  const shell=new THREE.Points(sg,shellMat);shell.renderOrder=1;
 
  const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});ren.setClearColor(0,0);
@@ -770,7 +770,7 @@ window.addEventListener('scroll', () => {
   const head=1-sm(.04,.18,p),slice=sm(.08,.26,p),s=sm(.13,.6,p),land=sm(.54,.72,p),glow=sm(.6,.72,p);
   inner.style.opacity=head;energy.style.opacity=head;
   const cut=88+(-12-88)*s;
-  U.uCut.value=cut;FU.uOp.value=.2+.8*sm(.04,.24,p);U.uOp.value=FU.uOp.value*(1-.5*sm(.13,.3,p));FU.uGlow.value=glow;FU.uTime.value=now/1000;
+  U.uCut.value=cut;FU.uOp.value=.2+.8*sm(.04,.24,p);U.uOp.value=(.34+.66*sm(.04,.24,p))*(1-.45*sm(.13,.3,p));FU.uGlow.value=glow;FU.uTime.value=now/1000;
   face.visible=cut<84;face.position.y=cut-C.z;
 
   const target=-.55+.3*land;

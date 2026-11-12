@@ -8,28 +8,26 @@ Writes  brain/shell-hd.bin, brain/shell-lite.bin
 Two surfaces are joined at z = -13 mm:
   above  the folded cortical surface, an isosurface of the T1 volume at the grey matter / CSF boundary, so gyri and sulci are real;
   below  (inferior temporal lobes, cerebellum, brainstem, where there are no slices) the smoothed mask surface.
-Both are re-surfaced with marching cubes, which gives a sub-voxel surface and a true outward normal at every point.
-Points are spread evenly over the surface (no voxel grid, so no moire), thinned with depth below the brain's outer hull,
-and shuffled.
+Points sit on a regular lattice (the surface voxels of each volume), which gives the ordered, matrix look.
+Each carries an outward normal from the smoothed volume gradient and a luminance that falls off into the sulci.
 
 File layout (little endian):  uint32 N
                               int16[N*3]  position, MNI mm * 100
                               int8[N*3]   outward unit normal * 127
                               uint8[N]    luminance (255 = exposed gyral crown ... 0 = deep in a sulcus)
 
-Needs numpy, scipy, scikit-image, pillow.   python3 tools/build_shell.py
+Needs numpy, scipy, pillow.   python3 tools/build_shell.py
 """
 import os
 import numpy as np
 from scipy import ndimage as ni
-from skimage import measure
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "shell-voxels.bin")
 OUT = os.path.join(HERE, "..", "brain")
-TARGETS = {"shell-hd.bin": 0.95, "shell-lite.bin": 1.35}  # mean point spacing, mm
-rng = np.random.default_rng(7)
+TARGETS = {"shell-hd.bin": 1.0, "shell-lite.bin": 1.5}  # lattice spacing, mm
+MAX_DEPTH = 9.0
 
 raw = np.fromfile(SRC, dtype=np.uint8).reshape(-1, 4)
 vox = raw[:, :3].view(np.int8).astype(np.int32)
@@ -52,34 +50,24 @@ depth_grid = ni.distance_transform_edt(solid).astype(np.float32)   # mm below th
 wide = ni.gaussian_filter(solid, 3.2)
 
 
-def surface(field, level, grad_sigma):
-    verts, faces, _, _ = measure.marching_cubes(field, level)
-    g = np.stack(np.gradient(ni.gaussian_filter(field, grad_sigma)), -1)
-    tri = verts[faces]
-    area = 0.5 * np.linalg.norm(np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]), axis=1)
-    return tri, area, g
+hull_field = ni.gaussian_filter(solid, 0.85)
+hull_grad = np.stack(np.gradient(ni.gaussian_filter(solid, 1.4)), -1)
 
 
-def sample(tri, area, spacing_vox):
-    """Even-ish sampling: oversample by area, then keep one point per grid cell."""
-    n = int(area.sum() / spacing_vox ** 2 * 6)
-    f = rng.choice(len(tri), n, p=area / area.sum())
-    a, b = rng.random(n), rng.random(n)
-    flip = a + b > 1
-    a[flip], b[flip] = 1 - a[flip], 1 - b[flip]
-    p = tri[f, 0] + a[:, None] * (tri[f, 1] - tri[f, 0]) + b[:, None] * (tri[f, 2] - tri[f, 0])
-    key = np.floor(p / (spacing_vox * 0.86)).astype(np.int64)
-    key = key[:, 0] * 4000003 + key[:, 1] * 2003 + key[:, 2]
-    _, keep = np.unique(key, return_index=True)
-    return p[keep]
+def at(vol, idx):
+    return ni.map_coordinates(vol, idx.T, order=1, mode="nearest")
 
 
-def normals(g, p):
-    v = np.stack([ni.map_coordinates(g[..., i], p.T, order=1) for i in range(3)], -1)
+def unit(g, idx):
+    v = np.stack([at(g[..., i], idx) for i in range(3)], -1)
     return -v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-6)
 
 
-hull_tri, hull_area, hull_grad = surface(ni.gaussian_filter(solid, 0.85), 0.5, 1.2)
+def lattice_surface(inside):
+    """Voxels that are inside and have a 6-neighbour outside: a one-voxel-thick surface on the lattice."""
+    core = ni.binary_erosion(inside, ni.generate_binary_structure(3, 1), border_value=1)
+    return inside & ~core
+
 
 # ---- cortex from the T1 slices, resampled to 0.5 mm isotropic; index order is (z, y, x)
 Image.MAX_IMAGE_PIXELS = None
@@ -90,29 +78,35 @@ for k in range(NZ):
     vol[k] = atlas[oy:oy + NY, ox:ox + NX] / 255.0
 CP = 6
 t1 = np.pad(ni.zoom(vol, (2, 1, 1), order=1), ((0, CP), (CP, CP), (CP, CP)))
-cx_tri, cx_area, cx_grad = surface(ni.gaussian_filter(t1, 1.1), CORTEX_ISO, 1.0)
+cx_field = ni.gaussian_filter(t1, 1.1)
+cx_grad = np.stack(np.gradient(ni.gaussian_filter(t1, 1.6)), -1)
 
 
-def build(spacing):
-    # cortex
-    p = sample(cx_tri, cx_area, spacing / 0.5)
-    n = normals(cx_grad, p)[:, ::-1]
-    mm = np.stack([(p[:, 2] - CP) * 0.5 + X0, (p[:, 1] - CP) * 0.5 + Y0, p[:, 0] * 0.5 + Z0], 1)
-    d = ni.map_coordinates(depth_grid, (mm - org).T, order=1)
-    keep = (mm[:, 2] >= SEAM) & (rng.random(len(mm)) < np.exp(-np.maximum(d - 2.5, 0) / 4.0)) & (d < 16)
-    mm, n, d = mm[keep], n[keep], d[keep]
-    lum = np.exp(-np.maximum(d - 1.0, 0) / 3.5)
-    # mask hull below the seam
-    hp = sample(hull_tri, hull_area, spacing)
-    hmm = hp + org
-    low = hmm[:, 2] < SEAM
-    hp, hmm = hp[low], hmm[low]
-    hn = normals(hull_grad, hp)
-    cav = np.clip((ni.map_coordinates(wide, hp.T, order=1) - 0.30) / 0.40, 0, 1)
-    hl = 0.78 * (1 - 0.7 * cav)
-    mm, n, lum = np.concatenate([mm, hmm]), np.concatenate([n, hn]), np.concatenate([lum, hl])
-    o = rng.permutation(len(mm))
-    return mm[o], n[o], lum[o]
+def build(g):
+    # a regular lattice of points g mm apart (integer mm when g = 1, so layers line up with the slices)
+    xs = np.arange(np.ceil(-76 / g), 76 / g) * g
+    ys = np.arange(np.ceil(-112 / g), 78 / g) * g
+    zs = np.arange(np.ceil(-76 / g), 86 / g) * g
+    X, Y, Z = np.meshgrid(xs, ys, zs, indexing="ij")
+    mm = np.stack([X, Y, Z], -1).reshape(-1, 3)
+    hi = mm - org                                                   # index into the 1 mm hull grids (x, y, z)
+    ci = np.stack([(mm[:, 2] - Z0) / 0.5, (mm[:, 1] - Y0) / 0.5 + CP, (mm[:, 0] - X0) / 0.5 + CP], 1)   # T1 grid (z, y, x)
+    shape = X.shape
+    in_hull = (at(hull_field, hi) > 0.5).reshape(shape)
+    in_cx = ((at(cx_field, ci) > CORTEX_ISO) & (mm[:, 2] >= Z0) & (mm[:, 2] <= 82)).reshape(shape)
+    s_hull = lattice_surface(in_hull).ravel() & (mm[:, 2] < SEAM)
+    s_cx = lattice_surface(in_cx).ravel() & (mm[:, 2] >= SEAM)
+    d = at(depth_grid, hi)
+    s_cx &= d < MAX_DEPTH                                           # skip ventricles and the deepest sulcal walls
+    n = np.zeros((len(mm), 3), np.float32)
+    n[s_cx] = unit(cx_grad, ci[s_cx])[:, ::-1]
+    n[s_hull] = unit(hull_grad, hi[s_hull])
+    lum = np.zeros(len(mm), np.float32)
+    lum[s_cx] = np.exp(-np.maximum(d[s_cx] - 1.0, 0) / 3.5)
+    cav = np.clip((at(wide, hi[s_hull]) - 0.30) / 0.40, 0, 1)
+    lum[s_hull] = 0.78 * (1 - 0.7 * cav)
+    keep = s_cx | s_hull
+    return mm[keep], n[keep], lum[keep]
 
 
 for name, spacing in TARGETS.items():
