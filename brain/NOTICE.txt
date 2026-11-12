@@ -1,4 +1,6 @@
-shell.bin is derived from the ICBM 2009 nonlinear symmetric MNI152 template (1 mm).
+shell-hd.bin and shell-lite.bin are surface point clouds built by tools/build_shell.py: the folded cortex is an isosurface of
+slices-hd.webp, and the surface below z = -13 mm comes from tools/shell-voxels.bin, the 1 mm outer-surface voxels of the
+ICBM 2009 nonlinear symmetric MNI152 template.
 slices-hd.webp (0.5 mm) and slices-lite.webp (1 mm, 2x2 average for phones) are derived from the ICBM 2009b nonlinear symmetric MNI152 template
 (0.5 mm, mni_icbm152_t1_tal_nlin_sym_09b_hires): T1w axial slices z = -14..82 mm,
 cropped to the brain, intensity-matched to the earlier 1 mm slices, losslessly encoded.

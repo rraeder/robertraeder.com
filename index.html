@@ -98,16 +98,16 @@ nav ul a:hover{color:var(--text)}
   background:var(--accent);box-shadow:0 0 14px var(--accent);
 }
 #mid-label span{
-  position:absolute;left:calc(var(--lead,80px) + 12px);top:-.7rem;
-  font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--text);line-height:1.9;
-  white-space:normal;width:min(240px,calc(100vw - 100% - 3rem));min-width:180px;
+  position:absolute;left:calc(var(--lead,80px) + 16px);top:-.62rem;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:500;font-size:.78rem;letter-spacing:.16em;
+  text-transform:uppercase;color:#f2f0e9;line-height:1.6;
+  white-space:normal;width:min(300px,calc(100vw - 100% - 3rem));min-width:200px;
 }
 #mid-label b{
   position:absolute;left:6px;top:0;height:1px;width:calc(var(--lead,80px) + 0px);
   background:linear-gradient(90deg,var(--accent),rgba(255,122,46,.25));
 }
-#mid-label em{display:block;font-style:normal;color:var(--meta);letter-spacing:.08em;text-transform:none}
+#mid-label em{display:block;margin-top:.55rem;font-family:'Lora',serif;font-style:normal;font-weight:400;font-size:1.06rem;line-height:1.5;color:rgba(232,230,223,.86);letter-spacing:0;text-transform:none}
 #z-read{
   position:absolute;left:3rem;bottom:2.5rem;z-index:3;opacity:0;
   font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.14em;
@@ -115,10 +115,21 @@ nav ul a:hover{color:var(--text)}
   font-variant-numeric:tabular-nums;
 }
 #z-read b{color:var(--text);font-weight:400}
+#scroll-cue{
+  position:absolute;left:50%;bottom:2.2rem;z-index:3;transform:translateX(-50%);pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:.8rem;opacity:0;transition:opacity .8s ease;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:500;font-size:.62rem;letter-spacing:.24em;text-indent:.24em;
+  text-transform:uppercase;color:var(--meta);
+}
+#scroll-cue i{display:block;width:1px;height:38px;background:rgba(232,230,223,.16);position:relative;overflow:hidden}
+#scroll-cue i::after{content:'';position:absolute;left:0;top:0;width:1px;height:14px;background:var(--text);animation:cue 2.4s cubic-bezier(.6,0,.3,1) infinite}
+@keyframes cue{0%{transform:translateY(-14px)}70%,100%{transform:translateY(38px)}}
+@media(prefers-reduced-motion:reduce){#scroll-cue i::after{animation:none;transform:translateY(12px)}}
 @media(max-width:820px){
   #z-read{left:1.5rem;bottom:1.5rem}
   #mid-label b{display:none}
-  #mid-label span{left:calc(var(--mx,0px) - 35vw);top:10rem;width:70vw;min-width:0;white-space:normal;text-align:center}
+  #mid-label span{left:calc(var(--mx,0px) - 40vw);top:var(--drop,10rem);width:80vw;min-width:0;white-space:normal;text-align:center;font-size:.72rem}
+  #mid-label em{font-size:1rem}
 }
 .hero-inner{position:relative;z-index:3;padding:0 2rem;width:100%;pointer-events:none}
 #energy-canvas{
@@ -354,6 +365,7 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
     <div class="headline" id="headline"><h1>The brain is a metabolic organ.</h1></div>
   </div>
   <div id="mid-label" aria-hidden="true"><i></i><b></b><span>Substantia nigra · VTA<em>Dopamine-producing midbrain, imaged with neuromelanin-sensitive MRI</em></span></div>
+  <div id="scroll-cue" aria-hidden="true">Scroll<i></i></div>
   <div id="z-read" aria-hidden="true">MNI152 template · axial slice<br><b style="text-transform:none">z = <span id="z-val">+88</span> mm</b></div>
  </div>
 </section>
@@ -587,36 +599,48 @@ window.addEventListener('scroll', () => {
 (async function(){
  const wrap=document.getElementById('hero'),stage=document.getElementById('hero-stage'),cv=document.getElementById('brain-canvas');
  const inner=stage.querySelector('.hero-inner'),energy=document.getElementById('energy-canvas');
- const label=document.getElementById('mid-label'),zval=document.getElementById('z-val'),zread=document.getElementById('z-read');
+ const label=document.getElementById('mid-label'),zval=document.getElementById('z-val'),zread=document.getElementById('z-read'),cue=document.getElementById('scroll-cue');
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!window.THREE)return;
- let SHB;try{SHB=await (await fetch('/brain/shell.bin')).arrayBuffer()}catch(e){return}
- // Phones / coarse pointers / small screens get the 1 mm grid on the 2D path and a lower DPR; desktop keeps 0.5 mm in a 3D texture.
+ // Phones / coarse pointers / small screens get the 1 mm grid on the 2D path and a sparser surface; desktop keeps 0.5 mm in a 3D texture.
  const LITE=matchMedia('(pointer: coarse)').matches||Math.min(innerWidth,screen.width||innerWidth)<820;
- const DPR_CAP=LITE?1.5:2;
+ const DPR_CAP=2;
+ let SHB;try{SHB=await (await fetch(LITE?'/brain/shell-lite.bin':'/brain/shell-hd.bin')).arrayBuffer()}catch(e){return}
  // slices-hd.webp: 97 axial slices (z=-14..82, 1 mm apart) of 294x366 voxels at 0.5 mm, each tile padded 1 px, 10x10 grid; 0 = outside brain
  const SLICE_META={NX:294,NY:366,NZ:97,TX:296,TY:368,cols:10,rows:10,z0:-14,x0:-73,y0:-108,vox:.5};
  const LITE_META={NX:147,NY:183,NZ:97,TX:149,TY:185,cols:10,rows:10,z0:-14,x0:-72.75,y0:-107.75,vox:1}; // slices-lite.webp: same slices at 1 mm
  const C={x:0,y:-18,z:6}; // rough centre of the brain in MNI space (mm)
 
- // outer surface: 1 mm points, x,y,z (MNI, int8) + intensity
- const u=new Uint8Array(SHB),n=u.length/4,s8=new Int8Array(SHB);
- const P=new Float32Array(n*3),I=new Float32Array(n),Zs=new Float32Array(n);
+ // surface: points spread evenly over the folded cortex (from the T1 slices) and, below z = -13, the mask surface;
+ // each has an outward normal and a luminance that falls off into the sulci (see tools/build_shell.py)
+ // layout: uint32 N | int16 xyz (MNI mm x100) | int8 normal x127 | uint8 luminance
+ const n=new Uint32Array(SHB,0,1)[0];
+ const q16=new Int16Array(SHB,4,n*3),q8=new Int8Array(SHB,4+n*6,n*3),qL=new Uint8Array(SHB,4+n*9,n);
+ const P=new Float32Array(n*3),Nn=new Float32Array(n*3),Lm=new Float32Array(n),Zs=new Float32Array(n);
  for(let i=0;i<n;i++){
-  const x=s8[i*4],y=s8[i*4+1],z=s8[i*4+2];
+  const x=q16[i*3]/100,y=q16[i*3+1]/100,z=q16[i*3+2]/100;
   P[i*3]=-(x-C.x);P[i*3+1]=z-C.z;P[i*3+2]=y-C.y;
-  I[i]=u[i*4+3]/255;Zs[i]=z;
+  Nn[i*3]=-q8[i*3]/127;Nn[i*3+1]=q8[i*3+2]/127;Nn[i*3+2]=q8[i*3+1]/127;
+  Lm[i]=qL[i]/255;Zs[i]=z;
  }
  const sg=new THREE.BufferGeometry();
- sg.setAttribute('position',new THREE.BufferAttribute(P,3));
- sg.setAttribute('aI',new THREE.BufferAttribute(I,1));sg.setAttribute('aZ',new THREE.BufferAttribute(Zs,1));
- const U={uCut:{value:99},uPx:{value:1},uOp:{value:.2}};
+ sg.setAttribute('position',new THREE.BufferAttribute(P,3));sg.setAttribute('aN',new THREE.BufferAttribute(Nn,3));
+ sg.setAttribute('aL',new THREE.BufferAttribute(Lm,1));sg.setAttribute('aZ',new THREE.BufferAttribute(Zs,1));
+ const U={uCut:{value:99},uPx:{value:1},uOp:{value:.2},uSz:{value:LITE?1.45:1.25}};
+ // Lit by its normals: the near surface carries the anatomy, the silhouette gets a rim, the far side falls back to a ghost,
+ // and the points just under the cut plane light up as a contour.
  const shellMat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-  vertexShader:`attribute float aI,aZ;uniform float uCut,uPx,uOp;varying vec3 vC;
+  vertexShader:`attribute float aL,aZ;attribute vec3 aN;uniform float uCut,uPx,uOp,uSz;varying vec3 vC;
   void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;
-   if(aZ>uCut+.5){gl_PointSize=0.;gl_Position=vec4(2.,2.,2.,1.);return;}
-   float b=.12+1.05*pow(aI,2.4);vC=vec3(.74,.74,.72)*b*uOp*.56;gl_PointSize=1.25*uPx/-mv.z;}`,
-  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*smoothstep(.25,.13,r),1.);}`});
+   if(aZ>uCut+.3){gl_PointSize=0.;gl_Position=vec4(2.,2.,2.,1.);return;}
+   vec3 nv=normalize(normalMatrix*aN),v=normalize(-mv.xyz);float ndv=dot(nv,v);
+   float front=smoothstep(-.05,.4,ndv),rim=pow(1.-abs(ndv),2.5);
+   float key=.5+.5*dot(nv,normalize(vec3(-.5,.65,.57)));
+   float b=.012+aL*(front*(.05+.6*key*key)+rim*(.06+.3*front));
+   float edge=(1.-smoothstep(0.,1.2,uCut-aZ))*step(uCut,84.)*aL;
+   vC=vec3(.82,.82,.79)*b*uOp+vec3(.95,.93,.88)*edge*.22;
+   gl_PointSize=uSz*uPx/-mv.z;}`,
+  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*smoothstep(.25,.10,r),1.);}`});
  const shell=new THREE.Points(sg,shellMat);shell.renderOrder=1;
 
  const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});ren.setClearColor(0,0);
@@ -624,7 +648,7 @@ window.addEventListener('scroll', () => {
  // WebGL2: the atlas is unpacked into a 3D texture; WebGL1: sampled straight from the padded 2D atlas.
  const gl2=!!(ren.capabilities&&ren.capabilities.isWebGL2),use3D=!LITE&&gl2&&!!THREE.DataTexture3D;
  const M=LITE?LITE_META:SLICE_META,SRC=LITE?'/brain/slices-lite.webp':'/brain/slices-hd.webp';
- const FU={tex:{value:new THREE.DataTexture(new Uint8Array(4),1,1)},uCut:U.uCut,uOp:U.uOp,uGlow:{value:0},uTime:{value:0},uReady:{value:0},
+ const FU={tex:{value:new THREE.DataTexture(new Uint8Array(4),1,1)},uCut:U.uCut,uOp:{value:.2},uGlow:{value:0},uTime:{value:0},uReady:{value:0},
   uN:{value:new THREE.Vector3(M.NX,M.NY,M.NZ)},uT:{value:new THREE.Vector4(M.TX,M.TY,M.cols,M.rows)},
   uO:{value:new THREE.Vector4(M.x0,M.y0,M.z0,M.vox)},uC:{value:new THREE.Vector3(C.x,C.y,C.z)}};
  // Decode off the main thread. 3D: a worker decodes the grid and repacks it into a volume. 2D: createImageBitmap.
@@ -668,30 +692,51 @@ window.addEventListener('scroll', () => {
   uniform sampler2D tex;
   #endif
   uniform float uCut,uOp,uGlow,uTime,uReady;uniform vec3 uN,uC;uniform vec4 uT,uO;varying vec3 vP;
-  float ell(vec3 p,vec3 c,vec3 r){vec3 d=(p-c)/r;return 1.-smoothstep(.15,1.,dot(d,d));}
+  float kz;
+  // one bilinear tap inside the current 1 mm layer; t is in texel units
+  float S(vec2 t){
+   t=clamp(t,vec2(.5),uN.xy-.5);
+   #ifdef VOL3D
+   return texture(tex,vec3(t/uN.xy,(kz+.5)/uN.z)).r;
+   #else
+   vec2 tl=vec2(mod(kz,uT.z),floor(kz/uT.z))*uT.xy+1.;
+   return texture2D(tex,(tl+t)/(uT.xy*uT.zw)).r;
+   #endif
+  }
+  // Catmull-Rom in 9 taps: keeps voxel edges sharp where plain bilinear magnification goes soft
+  float CR(vec2 p){
+   vec2 c=floor(p-.5)+.5,f=p-c;
+   vec2 w0=f*(-.5+f*(1.-.5*f)),w1=1.+f*f*(-2.5+1.5*f),w2=f*(.5+f*(2.-1.5*f)),w3=f*f*(-.5+.5*f);
+   vec2 w12=w1+w2,t0=c-1.,t3=c+2.,t12=c+w2/w12;
+   return clamp(
+    S(vec2(t0.x,t0.y))*w0.x*w0.y+S(vec2(t12.x,t0.y))*w12.x*w0.y+S(vec2(t3.x,t0.y))*w3.x*w0.y+
+    S(vec2(t0.x,t12.y))*w0.x*w12.y+S(vec2(t12.x,t12.y))*w12.x*w12.y+S(vec2(t3.x,t12.y))*w3.x*w12.y+
+    S(vec2(t0.x,t3.y))*w0.x*w3.y+S(vec2(t12.x,t3.y))*w12.x*w3.y+S(vec2(t3.x,t3.y))*w3.x*w3.y,0.,1.);
+  }
+  float ell(vec3 p,vec3 c,vec3 r){vec3 d=(p-c)/r;return 1.-dot(d,d);}
   void main(){
    vec3 m=vec3(-vP.x+uC.x,vP.z+uC.y,uCut);           // MNI mm at this fragment
    if(uReady<.5)discard;
    vec2 ij=(m.xy-uO.xy)/uO.w+.5;                      // texel coords
    if(ij.x<.5||ij.y<.5||ij.x>uN.x-.5||ij.y>uN.y-.5)discard;
-   float k=clamp(floor(uCut-uO.z+.5),0.,uN.z-1.);     // nearest 1 mm layer, no blending
-   #ifdef VOL3D
-   float v=texture(tex,vec3(ij/uN.xy,(k+.5)/uN.z)).r;
-   #else
-   vec2 tl=vec2(mod(k,uT.z),floor(k/uT.z))*uT.xy+1.;
-   float v=texture2D(tex,(tl+ij)/(uT.xy*uT.zw)).r;
-   #endif
-   if(v<.03)discard;
-   float g=smoothstep(.40,.90,v);g=g*g*(3.-2.*g);
-   vec3 c=mix(vec3(.04,.05,.07),vec3(.95,.94,.90),g);
-   float glow=0.;
+   kz=clamp(floor(uCut-uO.z+.5),0.,uN.z-1.);          // nearest 1 mm layer, no blending
+   float v=CR(ij);
+   float soft=.25*(S(ij+vec2(1.5,0.))+S(ij-vec2(1.5,0.))+S(ij+vec2(0.,1.5))+S(ij-vec2(0.,1.5)));
+   float a=smoothstep(.02,.07,max(v,soft*.9));        // antialiased outline instead of a hard discard
+   if(a<.01)discard;
+   v=clamp(v+.55*(v-soft),0.,1.);                     // unsharp mask
+   float g=smoothstep(.34,.93,v);g=g*g*(3.-2.*g);g=pow(g,1.12);
+   vec3 c=mix(vec3(.035,.04,.055),vec3(.96,.95,.91),g);
+   float f=-1.;
    for(int s=0;s<2;s++){float sx=s==0?-1.:1.;
-    glow=max(glow,ell(m,vec3(sx*11.,-18.,-10.),vec3(4.,7.,5.)));
-    glow=max(glow,ell(m,vec3(sx*4.,-17.,-12.),vec3(3.,4.,4.)));}
-   float pulse=.85+.15*sin(uTime*3.+m.x*.6+m.y*.4);
-   vec3 hot=vec3(1.,.48,.18)*pulse*(.55+.75*g);
-   c=mix(c,hot,glow*uGlow*.85);
-   gl_FragColor=vec4(c,uOp);
+    f=max(f,ell(m,vec3(sx*11.,-18.,-10.),vec3(4.,7.,5.)));
+    f=max(f,ell(m,vec3(sx*4.,-17.,-12.),vec3(3.,4.,4.)));}
+   float core=smoothstep(-.25,.75,f);core*=core;
+   float pulse=.9+.1*sin(uTime*2.4+m.x*.5+m.y*.35);
+   vec3 hot=vec3(1.,.48,.18)*pulse*(.45+.85*g);
+   c*=mix(1.,.8,uGlow*(1.-core));                     // the rest of the slice steps back a little
+   c=mix(c,hot,core*uGlow*.88);
+   gl_FragColor=vec4(c,uOp*a);
   }`});
  const face=new THREE.Mesh(pg,faceMat);face.renderOrder=0;
 
@@ -699,7 +744,7 @@ window.addEventListener('scroll', () => {
  const scene=new THREE.Scene();scene.add(group);
  const cam=new THREE.PerspectiveCamera(30,1,10,2000);
 
- let W=0,H=0;
+ let W=0,H=0,ZOOM=.5,AX=0,AY=0;
  function resize(){
   const w=stage.clientWidth,h=stage.clientHeight;
   // iOS URL bar show/hide only changes the height a little: keep the drawing buffer instead of reallocating mid-scroll
@@ -708,31 +753,39 @@ window.addEventListener('scroll', () => {
   ren.setPixelRatio(dpr);ren.setSize(W,H,false);cam.aspect=W/H;
   const t=Math.tan(15*Math.PI/180);
   cam.position.set(0,0,Math.max(88/t,80/(t*cam.aspect))/(.8*1.12));cam.lookAt(0,0,0);cam.updateProjectionMatrix();
+  // landing anchor in mm: left of centre on wide screens (the caption sits to the right), above centre on phones (caption below)
+  ZOOM=w>820?.14:.3;AX=w>820?-30:0;AY=w>820?0:40;
   U.uPx.value=H*dpr/(2*t);
  }
  new ResizeObserver(resize).observe(stage);resize();
 
  const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
  const SN=new THREE.Vector3(-11+C.x,-12-C.z,-18-C.y),SNM=new THREE.Vector3(0,-12-C.z,-18-C.y); // SNM: same depth, on the midline
- let az=-.5,last=performance.now(),raf=0,on=true;const SV=new THREE.Vector3();let pZ='',pZo=-1,pLo=-1,pT='',pLead='',pMx='';
+ let az=-.5,last=performance.now(),raf=0,on=true;const SV=new THREE.Vector3();let pZ='',pZo=-1,pLo=-1,pT='',pLead='',pMx='',pCo=-1,pDr='';
  function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   const r=wrap.getBoundingClientRect(),span=wrap.offsetHeight-innerHeight;
   const p=span>0?Math.min(1,Math.max(0,-r.top/span)):0;
-  const head=1-sm(.04,.2,p),slice=sm(.1,.3,p),s=sm(.16,.78,p),glow=sm(.78,.9,p);
+  // slice down by 60% of the scroll, push in and light the midbrain by 72%, then hold the landing for the rest
+  const head=1-sm(.04,.18,p),slice=sm(.08,.26,p),s=sm(.13,.6,p),land=sm(.54,.72,p),glow=sm(.6,.72,p);
   inner.style.opacity=head;energy.style.opacity=head;
   const cut=88+(-12-88)*s;
-  U.uCut.value=cut;U.uOp.value=.2+.8*sm(.04,.24,p);FU.uGlow.value=glow;FU.uTime.value=now/1000;
+  U.uCut.value=cut;FU.uOp.value=.2+.8*sm(.04,.24,p);U.uOp.value=FU.uOp.value*(1-.5*sm(.13,.3,p));FU.uGlow.value=glow;FU.uTime.value=now/1000;
   face.visible=cut<84;face.position.y=cut-C.z;
 
-  const target=-.55;
+  const target=-.55+.3*land;
   if(!reduce)az+=dt*.16*(1-slice);
   const near=target+Math.PI*2*Math.round((az-target)/(Math.PI*2));
   az+=(near-az)*Math.min(1,slice*dt*4);
-  group.rotation.set(.12+.62*slice,az,0);
+  group.rotation.set(.12+.62*slice+.22*land,az,0);
+  // push in on the midbrain: scale up and slide the SN/VTA midpoint toward the anchor
+  const sc=1+ZOOM*land;group.scale.setScalar(sc);
+  SV.copy(SNM).applyEuler(group.rotation).multiplyScalar(sc);
+  group.position.set((AX-SV.x)*land,(AY-SV.y)*land,0);
   ren.render(scene,cam);
 
-  const zo=sm(.14,.22,p);if(zo!==pZo){zread.style.opacity=pZo=zo}
+  const zo=sm(.08,.16,p);if(zo!==pZo){zread.style.opacity=pZo=zo}
+  const co=p<.015?1:0;if(co!==pCo){cue.style.opacity=pCo=co}
   const zt=(cut>=.5?'+':cut<=-.5?'−':'')+Math.abs(Math.round(cut));if(zt!==pZ)zval.textContent=pZ=zt;
   if(glow!==pLo)label.style.opacity=pLo=glow;
   if(glow>0){
@@ -742,7 +795,8 @@ window.addEventListener('scroll', () => {
    // phones: the caption sits below, so centre it on the midline between the left and right SN/VTA, not on the left one
    let mx='0px';if(W<=820){const m=SV.copy(SNM).applyMatrix4(group.matrixWorld).project(cam);mx=((m.x*.5+.5)*W-sx).toFixed(1)+'px'}
    if(mx!==pMx)label.style.setProperty('--mx',pMx=mx);
-   const ld=(W>820?Math.max(60,W/2+Math.min(W,H)*.4-sx):0).toFixed(0)+'px';if(ld!==pLead)label.style.setProperty('--lead',pLead=ld);
+   if(W<=820){const dr=Math.max(120,H*.67-sy).toFixed(0)+'px';if(dr!==pDr)label.style.setProperty('--drop',pDr=dr)}
+   const ld=(W>820?Math.max(60,Math.min(W-380,W*.69)-sx):0).toFixed(0)+'px';if(ld!==pLead)label.style.setProperty('--lead',pLead=ld);
   }
   if(on)raf=requestAnimationFrame(frame);
  }
