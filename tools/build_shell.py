@@ -8,7 +8,8 @@ Writes  brain/shell-hd.bin, brain/shell-lite.bin
 Two surfaces are joined at z = -13 mm:
   above  the folded cortical surface, an isosurface of the T1 volume at the grey matter / CSF boundary, so gyri and sulci are real;
   below  (inferior temporal lobes, cerebellum, brainstem, where there are no slices) the smoothed mask surface.
-Points sit on a regular lattice (the surface voxels of each volume), which gives the ordered, matrix look.
+Points start on a regular lattice (the surface voxels of each volume), which gives the ordered, matrix look,
+and are then slid along the gradient onto the smooth isosurface so there are no voxel terraces.
 Each carries an outward normal from the smoothed volume gradient and a luminance that falls off into the sulci.
 
 File layout (little endian):  uint32 N
@@ -26,7 +27,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "shell-voxels.bin")
 OUT = os.path.join(HERE, "..", "brain")
-TARGETS = {"shell-hd.bin": 1.0, "shell-lite.bin": 1.5}  # lattice spacing, mm
+TARGETS = {"shell-hd.bin": 0.8, "shell-lite.bin": 1.25}  # lattice spacing, mm
 MAX_DEPTH = 9.0
 
 raw = np.fromfile(SRC, dtype=np.uint8).reshape(-1, 4)
@@ -63,6 +64,20 @@ def unit(g, idx):
     return -v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-6)
 
 
+def settle(field, grad, idx, level, limit):
+    """Slide lattice points along the gradient onto the smooth isosurface, so the voxel terraces disappear
+    while the points keep their lattice ordering. limit = furthest a point may move, in voxels of this grid."""
+    p = idx.astype(np.float32).copy()
+    for _ in range(5):
+        g = np.stack([at(grad[..., i], p) for i in range(3)], -1)
+        step = (level - at(field, p))[:, None] * g / np.maximum((g * g).sum(1, keepdims=True), 1e-4)
+        p += 0.8 * step
+        off = p - idx
+        far = np.linalg.norm(off, axis=1, keepdims=True)
+        p = idx + off * np.minimum(1.0, limit / np.maximum(far, 1e-6))
+    return p
+
+
 def lattice_surface(inside):
     """Voxels that are inside and have a 6-neighbour outside: a one-voxel-thick surface on the lattice."""
     core = ni.binary_erosion(inside, ni.generate_binary_structure(3, 1), border_value=1)
@@ -96,8 +111,13 @@ def build(g):
     in_cx = ((at(cx_field, ci) > CORTEX_ISO) & (mm[:, 2] >= Z0) & (mm[:, 2] <= 82)).reshape(shape)
     s_hull = lattice_surface(in_hull).ravel() & (mm[:, 2] < SEAM)
     s_cx = lattice_surface(in_cx).ravel() & (mm[:, 2] >= SEAM)
+    s_cx &= at(depth_grid, hi) < MAX_DEPTH                          # skip ventricles and the deepest sulcal walls
+    ci[s_cx] = settle(cx_field, cx_grad, ci[s_cx], CORTEX_ISO, 0.9 * g / 0.5)
+    hi[s_hull] = settle(hull_field, hull_grad, hi[s_hull], 0.5, 0.9 * g)
+    mm[s_cx] = np.stack([(ci[s_cx, 2] - CP) * 0.5 + X0, (ci[s_cx, 1] - CP) * 0.5 + Y0, ci[s_cx, 0] * 0.5 + Z0], 1)
+    mm[s_hull] = hi[s_hull] + org
+    hi[s_cx] = mm[s_cx] - org
     d = at(depth_grid, hi)
-    s_cx &= d < MAX_DEPTH                                           # skip ventricles and the deepest sulcal walls
     n = np.zeros((len(mm), 3), np.float32)
     n[s_cx] = unit(cx_grad, ci[s_cx])[:, ::-1]
     n[s_hull] = unit(hull_grad, hi[s_hull])
