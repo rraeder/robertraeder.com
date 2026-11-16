@@ -117,6 +117,11 @@ nav ul a:hover{color:var(--text)}
   font-variant-numeric:tabular-nums;
 }
 #z-read b{color:var(--text);font-weight:400}
+/* figure annotations: anchored to the slice plane in MNI space and projected every frame */
+.fig-mark{
+  position:absolute;left:0;top:0;z-index:3;opacity:0;pointer-events:none;white-space:nowrap;
+  font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.14em;line-height:1;color:var(--meta);
+}
 #scroll-cue{
   position:absolute;left:50%;bottom:2.2rem;z-index:3;transform:translateX(-50%);pointer-events:none;
   display:flex;flex-direction:column;align-items:center;gap:.8rem;opacity:0;transition:opacity .8s ease;
@@ -185,6 +190,7 @@ h2.manifesto{
 
 /* VERTICAL SECTION LABELS: quiet margin markers, subordinate to the sentence headlines */
 #bio .wrap-w,#news .wrap-w{position:relative}
+#bio{border-top:0}  /* the hero dissolves into Research; no rule between them */
 .vlabel{position:absolute;top:0;bottom:0;left:-5.4rem;width:3rem}
 .vhead{position:sticky;top:6.2rem;margin:0;
   writing-mode:vertical-rl;transform:rotate(180deg);
@@ -367,6 +373,8 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
     <div class="headline" id="headline"><h1>The brain is a metabolic organ.</h1></div>
   </div>
   <div id="mid-label" aria-hidden="true"><i></i><b></b><span>Substantia nigra · VTA<em>Dopamine-producing midbrain, imaged with neuromelanin-sensitive MRI</em></span></div>
+  <div class="fig-mark" id="ori-r" aria-hidden="true">R</div>
+  <div class="fig-mark" id="ori-l" aria-hidden="true">L</div>
   <div id="scroll-cue" aria-hidden="true">Scroll<i></i></div>
   <div id="z-read" aria-hidden="true">MNI152 template · axial slice<br><b style="text-transform:none">z = <span id="z-val">+88</span> mm</b></div>
  </div>
@@ -527,7 +535,8 @@ window.addEventListener('scroll', () => {
  let W=0,H=0,P=[],TXT=[],font='',wx0=0,wx1=0,raf=0,visible=true,t0=performance.now(),first=true;
  const ptr={x:-1e4,y:-1e4,px:-1e4,py:-1e4,in:false};
  const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
- function col(e){const c=e<.12?REST:e<.6?mix(REST,HOT,(e-.12)/.48):mix(HOT,SPARK,Math.min(1,(e-.6)/.4));return`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`}
+ const LUT=Array.from({length:65},(_,i)=>{const e=i/64,c=e<.12?REST:e<.6?mix(REST,HOT,(e-.12)/.48):mix(HOT,SPARK,Math.min(1,(e-.6)/.4));return`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`});
+ function col(e){return LUT[(e*64)|0]}
  function lines(w){return w>=900?['THE BRAIN IS A','METABOLIC ORGAN.']:w>=520?['THE BRAIN IS A','METABOLIC','ORGAN.']:['THE BRAIN','IS A','METABOLIC','ORGAN.']}
 
  function build(){
@@ -551,12 +560,13 @@ window.addEventListener('scroll', () => {
    if(post)TXT.push([post,xm+mw,y]);
    o.fillText(K,xm,y);wx0=xm;wx1=xm+mw;
   });
-  const data=o.getImageData(0,0,off.width,off.height).data,max=W<700?3800:8000;
-  let gap=Math.max(2,Math.round(size/30)),pts;
+  // fine grain: about 3 px cells at full size, so the particle word holds an edge next to the solid letters
+  const data=o.getImageData(0,0,off.width,off.height).data,max=W<700?7000:20000;
+  let gap=Math.max(2,Math.round(size/50)),pts;
   for(;;){pts=[];for(let y=0;y<off.height;y+=gap)for(let x=0;x<off.width;x+=gap)if(data[(y*off.width+x)*4+3]>128)pts.push([x,y]);if(pts.length<=max)break;gap++}
   const old=P;P=pts.map(([x,y],i)=>{const q=old[i],a=Math.random()*6.283,r=Math.random()*size*.7;
    return{hx:x,hy:y,x:q?q.x:(first&&!reduce?x+Math.cos(a)*r:x),y:q?q.y:(first&&!reduce?y+Math.sin(a)*r:y),vx:0,vy:0,
-   e:q?q.e:(first&&!reduce?1:.06),s:gap*(.6+Math.random()*.35),ph:Math.random()*6.283}});
+   e:q?q.e:(first&&!reduce?1:.06),s:gap*(.86+Math.random()*.12),ph:Math.random()*6.283}});
   first=false;slot.classList.add('live');
  }
 
@@ -577,7 +587,7 @@ window.addEventListener('scroll', () => {
     p.vy+=(Math.random()-.5)*j+Math.sin(t*3+p.ph)*p.e*.25;
     p.vx+=(p.hx-p.x)*.06;p.vy+=(p.hy-p.y)*.06;p.vx*=.84;p.vy*=.84;p.x+=p.vx;p.y+=p.vy;
    }
-   const s=p.s*(1+p.e*.6);ctx.globalAlpha=.7+p.e*.3;ctx.fillStyle=col(Math.min(1,p.e));
+   const s=p.s*(1+p.e*.6);ctx.globalAlpha=.88+p.e*.12;ctx.fillStyle=col(Math.min(1,p.e));
    ctx.fillRect(p.x-s/2,p.y-s/2,s,s);
   }
   ctx.globalAlpha=1;ptr.px=ptr.x;ptr.py=ptr.y;
@@ -602,6 +612,8 @@ window.addEventListener('scroll', () => {
  const wrap=document.getElementById('hero'),stage=document.getElementById('hero-stage'),cv=document.getElementById('brain-canvas');
  const inner=stage.querySelector('.hero-inner'),energy=document.getElementById('energy-canvas');
  const label=document.getElementById('mid-label'),zval=document.getElementById('z-val'),zread=document.getElementById('z-read'),cue=document.getElementById('scroll-cue');
+ const oriR=document.getElementById('ori-r'),oriL=document.getElementById('ori-l');
+ const bio=document.querySelector('#bio .wrap-w');
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!window.THREE)return;
  // Phones / coarse pointers / small screens get the 1 mm grid on the 2D path and a sparser surface; desktop keeps 0.5 mm in a 3D texture.
@@ -769,7 +781,17 @@ window.addEventListener('scroll', () => {
 
  const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
  const SN=new THREE.Vector3(-10.9+C.x,-12-C.z,-17-C.y),SNM=new THREE.Vector3(0,-12-C.z,-18-C.y); // SNM: same depth, on the midline
- let az=-.5,last=performance.now(),raf=0,on=true;const SV=new THREE.Vector3();let pZ='',pZo=-1,pLo=-1,pT='',pLead='',pMx='',pCo=-1,pDr='';
+ let az=-.5,last=performance.now(),raf=0,on=true;const SV=new THREE.Vector3();let pZ='',pZo=-1,pLo=-1,pT='',pLead='',pMx='',pCo=-1,pDr='',pFo=-1,pOut=-1,pBio=-1,pA='';
+ // the brain leans a few degrees toward the cursor (fine pointers only), eased so it reads as weight rather than tracking
+ const lean={x:0,y:0,tx:0,ty:0};
+ if(!reduce&&matchMedia('(pointer: fine)').matches){
+  addEventListener('pointermove',e=>{lean.tx=(e.clientX/innerWidth-.5)*2;lean.ty=(e.clientY/innerHeight-.5)*2},{passive:true});
+  document.documentElement.addEventListener('pointerleave',()=>{lean.tx=lean.ty=0});
+ }
+ // figure annotations live in the slice plane: x, y in MNI mm at the current cut
+ const EDGE=LITE?84:80;let cutNow=88;
+ const proj=(x,y)=>{SV.set(-x+C.x,cutNow-C.z,y-C.y).applyMatrix4(group.matrixWorld).project(cam);return[(SV.x*.5+.5)*W,(-SV.y*.5+.5)*H]};
+ const pin=(el,x,y)=>{el.style.transform=`translate(${Math.min(W-14,Math.max(14,x)).toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%)`};
  function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   const r=wrap.getBoundingClientRect(),span=wrap.offsetHeight-innerHeight;
@@ -777,7 +799,7 @@ window.addEventListener('scroll', () => {
   // slice down by 60% of the scroll, light the midbrain by 72%, then hold the landing for the rest; the brain itself stays put
   const head=1-sm(.04,.18,p),slice=sm(.08,.26,p),s=sm(.13,.6,p),glow=sm(.6,.72,p);
   inner.style.opacity=head;energy.style.opacity=head;
-  const cut=88+(-12-88)*s;
+  const cut=cutNow=88+(-12-88)*s;
   U.uCut.value=cut;FU.uOp.value=.2+.8*sm(.04,.24,p);U.uOp.value=(.34+.66*sm(.04,.24,p))*(1-.45*sm(.13,.3,p));FU.uGlow.value=glow;FU.uTime.value=now/1000;
   face.visible=cut<84;face.position.y=cut-C.z;
 
@@ -785,8 +807,21 @@ window.addEventListener('scroll', () => {
   if(!reduce)az+=dt*.16*(1-slice);
   const near=target+Math.PI*2*Math.round((az-target)/(Math.PI*2));
   az+=(near-az)*Math.min(1,slice*dt*4);
-  group.rotation.set(.12+.62*slice,az,0);
+  const ease=1-Math.exp(-dt*4);lean.x+=(lean.tx-lean.x)*ease;lean.y+=(lean.ty-lean.y)*ease;
+  group.rotation.set(.12+.62*slice+lean.y*.05,az+lean.x*.08,0);
   ren.render(scene,cam);
+
+  // handoff: once the pinned stage starts to scroll away, the slice dissolves while the Research text comes up
+  const q=span>0?Math.min(1,Math.max(0,(-r.top-span)/innerHeight)):0;
+  const out=1-sm(.03,.7,q);if(out!==pOut)stage.style.opacity=pOut=out;
+  if(!reduce&&bio){const b=sm(.08,.5,q);if(b!==pBio){pBio=b;bio.style.opacity=b;bio.style.transform=b<1?`translateY(${((1-b)*18).toFixed(1)}px)`:''}}
+
+  // orientation markers, once there is a slice to annotate
+  const fo=sm(.2,.3,p);if(fo!==pFo){oriR.style.opacity=oriL.style.opacity=pFo=fo}
+  if(fo>0){
+   const R=proj(EDGE,-20),L=proj(-EDGE,-20),key=R[0].toFixed(1)+R[1].toFixed(1)+L[0].toFixed(1)+L[1].toFixed(1);
+   if(key!==pA){pA=key;pin(oriR,R[0],R[1]);pin(oriL,L[0],L[1])}
+  }
 
   const zo=sm(.08,.16,p);if(zo!==pZo){zread.style.opacity=pZo=zo}
   const co=p<.015?1:0;if(co!==pCo){cue.style.opacity=pCo=co}
@@ -809,7 +844,9 @@ window.addEventListener('scroll', () => {
  cv.style.opacity=0;cv.style.transition='opacity .5s ease';
  ren.compile(scene,cam);
  ready.then(()=>{if(ren.initTexture&&FU.uReady.value)ren.initTexture(FU.tex.value)});
- new IntersectionObserver(e=>{on=e[0].isIntersecting;cancelAnimationFrame(raf);if(on){last=performance.now();raf=requestAnimationFrame(frame)}}).observe(wrap);
+ new IntersectionObserver(e=>{on=e[0].isIntersecting;cancelAnimationFrame(raf);if(on){last=performance.now();raf=requestAnimationFrame(frame)}
+  else if(bio){pBio=-1;bio.style.opacity='';bio.style.transform=''}   // never leave Research half-faded once the hero is off screen
+ }).observe(wrap);
  requestAnimationFrame(()=>{cv.style.opacity=1});
 })();
 /* MARATHON WORD: the heading's MARATHON is made of particles that streak like a long exposure when you move across it.
