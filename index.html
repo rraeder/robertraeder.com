@@ -122,12 +122,6 @@ nav ul a:hover{color:var(--text)}
   position:absolute;left:0;top:0;z-index:3;opacity:0;pointer-events:none;white-space:nowrap;
   font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.14em;line-height:1;color:var(--meta);
 }
-#scale-lab{text-transform:none;letter-spacing:.1em}
-#scale-bar{
-  position:absolute;left:0;top:0;z-index:3;opacity:0;pointer-events:none;transform-origin:0 50%;
-  height:7px;width:40px;border:solid rgba(232,230,223,.56);border-width:0 1px;
-  background:linear-gradient(rgba(232,230,223,.56),rgba(232,230,223,.56)) 0 50%/100% 1px no-repeat;
-}
 #scroll-cue{
   position:absolute;left:50%;bottom:2.2rem;z-index:3;transform:translateX(-50%);pointer-events:none;
   display:flex;flex-direction:column;align-items:center;gap:.8rem;opacity:0;transition:opacity .8s ease;
@@ -381,8 +375,6 @@ nav ul a:focus-visible,.nav-email-mobile:focus-visible,.contact-links a:focus-vi
   <div id="mid-label" aria-hidden="true"><i></i><b></b><span>Substantia nigra · VTA<em>Dopamine-producing midbrain, imaged with neuromelanin-sensitive MRI</em></span></div>
   <div class="fig-mark" id="ori-r" aria-hidden="true">R</div>
   <div class="fig-mark" id="ori-l" aria-hidden="true">L</div>
-  <div id="scale-bar" aria-hidden="true"></div>
-  <div class="fig-mark" id="scale-lab" aria-hidden="true">10 mm</div>
   <div id="scroll-cue" aria-hidden="true">Scroll<i></i></div>
   <div id="z-read" aria-hidden="true">MNI152 template · axial slice<br><b style="text-transform:none">z = <span id="z-val">+88</span> mm</b></div>
  </div>
@@ -620,7 +612,7 @@ window.addEventListener('scroll', () => {
  const wrap=document.getElementById('hero'),stage=document.getElementById('hero-stage'),cv=document.getElementById('brain-canvas');
  const inner=stage.querySelector('.hero-inner'),energy=document.getElementById('energy-canvas');
  const label=document.getElementById('mid-label'),zval=document.getElementById('z-val'),zread=document.getElementById('z-read'),cue=document.getElementById('scroll-cue');
- const oriR=document.getElementById('ori-r'),oriL=document.getElementById('ori-l'),sbar=document.getElementById('scale-bar'),slab=document.getElementById('scale-lab');
+ const oriR=document.getElementById('ori-r'),oriL=document.getElementById('ori-l');
  const bio=document.querySelector('#bio .wrap-w');
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!window.THREE)return;
@@ -797,7 +789,7 @@ window.addEventListener('scroll', () => {
   document.documentElement.addEventListener('pointerleave',()=>{lean.tx=lean.ty=0});
  }
  // figure annotations live in the slice plane: x, y in MNI mm at the current cut
- const EDGE=LITE?84:80,BAR=[46,56];let cutNow=88;
+ const EDGE=LITE?84:80;let cutNow=88;
  const proj=(x,y)=>{SV.set(-x+C.x,cutNow-C.z,y-C.y).applyMatrix4(group.matrixWorld).project(cam);return[(SV.x*.5+.5)*W,(-SV.y*.5+.5)*H]};
  const pin=(el,x,y)=>{el.style.transform=`translate(${Math.min(W-14,Math.max(14,x)).toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%)`};
  function frame(now){
@@ -824,18 +816,11 @@ window.addEventListener('scroll', () => {
   const out=1-sm(.03,.7,q);if(out!==pOut)stage.style.opacity=pOut=out;
   if(!reduce&&bio){const b=sm(.08,.5,q);if(b!==pBio){pBio=b;bio.style.opacity=b;bio.style.transform=b<1?`translateY(${((1-b)*18).toFixed(1)}px)`:''}}
 
-  // orientation markers and a 10 mm scale bar, once there is a slice to annotate
-  const fo=sm(.2,.3,p);if(fo!==pFo){oriR.style.opacity=oriL.style.opacity=sbar.style.opacity=slab.style.opacity=pFo=fo}
+  // orientation markers, once there is a slice to annotate
+  const fo=sm(.2,.3,p);if(fo!==pFo){oriR.style.opacity=oriL.style.opacity=pFo=fo}
   if(fo>0){
-   const R=proj(EDGE,-20),L=proj(-EDGE,-20);let a=proj(BAR[0],BAR[1]),b=proj(BAR[0]+10,BAR[1]);if(a[0]>b[0])[a,b]=[b,a];
-   const key=R[0].toFixed(1)+R[1].toFixed(1)+a[0].toFixed(1)+a[1].toFixed(1)+b[1].toFixed(1);
-   if(key!==pA){pA=key;pin(oriR,R[0],R[1]);pin(oriL,L[0],L[1]);
-    const len=Math.hypot(b[0]-a[0],b[1]-a[1]),ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
-    sbar.style.width=len.toFixed(1)+'px';
-    if(W>820){sbar.style.transform=`translate(${a[0].toFixed(1)}px,${(a[1]-3.5).toFixed(1)}px) rotate(${ang.toFixed(4)}rad)`;
-     pin(slab,(a[0]+b[0])/2-Math.sin(ang)*16,(a[1]+b[1])/2+Math.cos(ang)*16)}
-    // phones: the slice fills the width, so the bar sits flat in the bottom-right corner, sized to 10 mm along the L-R axis
-    else{sbar.style.transform=`translate(${(W-24-len).toFixed(1)}px,${(H-36).toFixed(1)}px)`;pin(slab,W-24-len/2,H-54)}}
+   const R=proj(EDGE,-20),L=proj(-EDGE,-20),key=R[0].toFixed(1)+R[1].toFixed(1)+L[0].toFixed(1)+L[1].toFixed(1);
+   if(key!==pA){pA=key;pin(oriR,R[0],R[1]);pin(oriL,L[0],L[1])}
   }
 
   const zo=sm(.08,.16,p);if(zo!==pZo){zread.style.opacity=pZo=zo}
