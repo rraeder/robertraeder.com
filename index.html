@@ -294,16 +294,10 @@ h2.manifesto{
 .rv{opacity:0;transform:translateY(14px);transition:opacity .8s cubic-bezier(.16,1,.3,1) var(--d,0s),transform .8s cubic-bezier(.16,1,.3,1) var(--d,0s)}
 .rv.in{opacity:1;transform:none}
 .nl-item.rv{transition:opacity .8s cubic-bezier(.16,1,.3,1) var(--d,0s),transform .8s cubic-bezier(.16,1,.3,1) var(--d,0s),border-color .35s}
-/* photo entrances. The script wraps each photo in .ph-w and watches the wrapper (a hidden image cannot trigger its own reveal).
-   PREVIEW ONLY: ?photo=fade|dim|unmask|none switches the style so they can be compared; the chosen one stays, the switch goes. */
+/* photos fade in with the same small rise as the text blocks. The script wraps each photo in .ph-w and watches the wrapper. */
 .ph-w{display:block;transition:transform .4s cubic-bezier(.16,1,.3,1)}
-[data-photo=fade] .ph-w img{opacity:0;transform:translateY(14px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
-[data-photo=fade] .ph-w.in img{opacity:1;transform:none}
-[data-photo=dim] .ph-w img{filter:contrast(1.05) brightness(.22);transition:filter 1.8s ease}
-[data-photo=dim] .ph-w.in img{filter:contrast(1.05) brightness(.9)}
-[data-photo=unmask] .ph-w{overflow:hidden}
-[data-photo=unmask] .ph-w img{clip-path:inset(100% 0 0 0);transform:scale(1.06);transition:clip-path 1.2s cubic-bezier(.16,1,.3,1),transform 1.7s cubic-bezier(.16,1,.3,1)}
-[data-photo=unmask] .ph-w.in img{clip-path:inset(0);transform:none}
+.ph-w img{opacity:0;transform:translateY(14px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.ph-w.in img{opacity:1;transform:none}
 .run-photos .ph-w img{margin-top:0}
 .run-photos .run-cap+.ph-w{margin-top:1.2rem}
 .run-photos .ph-w.in:hover{transform:translateY(-4px)}
@@ -546,8 +540,7 @@ window.addEventListener('scroll', () => {
 (function(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches||!('IntersectionObserver' in window))return;
   const blocks=document.querySelectorAll('#marathon .fw,#marathon .body-text>p,.run-cap,.portrait-cap,#news .nl-year,#news .nl-item,.nl-more,.contact-links');
-  const mode=new URLSearchParams(location.search).get('photo')||'fade';document.documentElement.dataset.photo=mode;   // preview switch
-  const photos=mode==='none'?[]:document.querySelectorAll('.bio-portrait img,.run-photos img');
+  const photos=document.querySelectorAll('.bio-portrait img,.run-photos img');
   const io=new IntersectionObserver(es=>{
     let i=0;
     es.forEach(e=>{if(!e.isIntersecting)return;const el=e.target;
